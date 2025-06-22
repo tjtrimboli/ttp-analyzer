@@ -163,20 +163,31 @@ def test_attack_data():
         from ttp_extractor import TTPExtractor
         
         config = Config()
+        
+        # Check if data file exists
+        data_file = Path(config.ATTACK_DATA_FILE)
+        if not data_file.exists():
+            print("⚠ MITRE ATT&CK data not found")
+            print("  Run: python ttp_analyzer.py --update-attack-data")
+            return True
+        
         extractor = TTPExtractor(config)
-        
         techniques = extractor.get_all_techniques()
-        print(f"✓ Loaded {len(techniques)} MITRE ATT&CK techniques")
         
-        if len(techniques) > 0:
+        if len(techniques) > 10:  # Should have many techniques if properly loaded
+            print(f"✓ Loaded {len(techniques)} MITRE ATT&CK techniques")
+            
             sample_technique = list(techniques.keys())[0]
             print(f"  - Sample technique: {sample_technique} - {techniques[sample_technique]['name']}")
+        else:
+            print("⚠ Limited ATT&CK data available - may need to update")
+            print("  Run: python ttp_analyzer.py --update-attack-data")
         
         return True
         
     except Exception as e:
         print(f"⚠ ATT&CK data test failed: {e}")
-        print("  This is normal on first run - data will be downloaded automatically")
+        print("  Run: python ttp_analyzer.py --update-attack-data")
         return True
 
 def create_sample_structure():

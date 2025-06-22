@@ -26,11 +26,22 @@ class TTPAnalyzer:
         self.config = Config(config_path)
         self.setup_logging()
         
-        # Initialize components
-        self.parser = ReportParser(self.config)
-        self.extractor = TTPExtractor(self.config)
-        self.timeline_analyzer = TimelineAnalyzer(self.config)
-        self.visualizer = VisualizationEngine(self.config)
+        # Initialize components that are always needed
+        self.parser = None
+        self.extractor = None
+        self.timeline_analyzer = None
+        self.visualizer = None
+        
+    def _ensure_components_initialized(self):
+        """Lazy initialization of components that require heavy resources."""
+        if self.parser is None:
+            self.parser = ReportParser(self.config)
+        if self.extractor is None:
+            self.extractor = TTPExtractor(self.config)
+        if self.timeline_analyzer is None:
+            self.timeline_analyzer = TimelineAnalyzer(self.config)
+        if self.visualizer is None:
+            self.visualizer = VisualizationEngine(self.config)
         
     def setup_logging(self):
         """Configure logging for the application."""
@@ -82,6 +93,9 @@ class TTPAnalyzer:
     def analyze_actor(self, actor_name: str) -> Dict:
         """Analyze a specific threat actor."""
         self.logger.info(f"Starting analysis for threat actor: {actor_name}")
+        
+        # Ensure all components are initialized for analysis
+        self._ensure_components_initialized()
         
         try:
             # Validate actor directory
@@ -147,6 +161,13 @@ class TTPAnalyzer:
             )
             
             # Save analysis results
+            timeline_data = self.timeline_analyzer.analyze_timeline(all_ttps)
+            
+            # Safely extract date range
+            date_range = timeline_data.get('date_range', {})
+            start_date = date_range.get('start')
+            end_date = date_range.get('end')
+            
             results = {
                 'actor_name': actor_name,
                 'total_reports': len(parsed_reports),
@@ -154,8 +175,9 @@ class TTPAnalyzer:
                 'timeline_data': timeline_data,
                 'unique_techniques': len(set(ttp['technique_id'] for ttp in all_ttps)),
                 'date_range': {
-                    'start': min(ttp['date'] for ttp in all_ttps if ttp.get('date')),
-                    'end': max(ttp['date'] for ttp in all_ttps if ttp.get('date'))
+                    'start': start_date,
+                    'end': end_date,
+                    'duration_days': date_range.get('duration_days', 0)
                 },
                 'visualizations': {
                     'heatmap': str(heatmap_path),
@@ -189,6 +211,42 @@ class TTPAnalyzer:
                 
         return sorted(actors)
 
+    def update_attack_data(self) -> bool:
+        """Update MITRE ATT&CK framework data."""
+        self.logger.info("Updating MITRE ATT&CK framework data...")
+        
+        # Only initialize the extractor for this operation
+        if self.extractor is None:
+            self.extractor = TTPExtractor(self.config)
+        
+        try:
+            success = self.extractor.download_attack_data()
+            if success:
+                self.logger.info("ATT&CK data update completed successfully")
+                
+                # Display statistics about the downloaded data
+                techniques = self.extractor.get_all_techniques()
+                self.logger.info(f"Loaded {len(techniques)} ATT&CK techniques")
+                
+                # Count techniques by tactic
+                tactic_counts = {}
+                for technique_info in techniques.values():
+                    tactic = technique_info.get('tactic', 'unknown')
+                    tactic_counts[tactic] = tactic_counts.get(tactic, 0) + 1
+                
+                self.logger.info("Techniques by tactic:")
+                for tactic, count in sorted(tactic_counts.items()):
+                    self.logger.info(f"  {tactic}: {count}")
+                
+                return True
+            else:
+                self.logger.error("Failed to update ATT&CK data")
+                return False
+                
+        except Exception as e:
+            self.logger.error(f"ATT&CK data update failed: {e}")
+            return False
+
 
 def main():
     """Main entry point for the application."""
@@ -199,6 +257,7 @@ def main():
 Examples:
   python ttp_analyzer.py --actor APT1
   python ttp_analyzer.py --list-actors
+  python ttp_analyzer.py --update-attack-data
   python ttp_analyzer.py --actor scattered_spider --config custom_config.yaml
         """
     )
@@ -213,6 +272,12 @@ Examples:
         '--list-actors', '-l',
         action='store_true',
         help='List all available threat actors'
+    )
+    
+    parser.add_argument(
+        '--update-attack-data', '-u',
+        action='store_true',
+        help='Download and update MITRE ATT&CK framework data'
     )
     
     parser.add_argument(
@@ -237,6 +302,16 @@ Examples:
         if args.verbose:
             logging.getLogger().setLevel(logging.DEBUG)
         
+        # Update ATT&CK data if requested
+        if args.update_attack_data:
+            success = analyzer.update_attack_data()
+            if success:
+                print("✓ MITRE ATT&CK data updated successfully")
+            else:
+                print("✗ Failed to update MITRE ATT&CK data")
+                sys.exit(1)
+            return
+        
         # List actors if requested
         if args.list_actors:
             actors = analyzer.list_available_actors()
@@ -250,7 +325,7 @@ Examples:
         
         # Validate actor argument
         if not args.actor:
-            parser.error("Either --actor or --list-actors must be specified")
+            parser.error("Either --actor, --list-actors, or --update-attack-data must be specified")
         
         # Run analysis
         results = analyzer.analyze_actor(args.actor)
@@ -260,7 +335,15 @@ Examples:
         print(f"Reports analyzed: {results['total_reports']}")
         print(f"TTPs extracted: {results['total_ttps']}")
         print(f"Unique techniques: {results['unique_techniques']}")
-        print(f"Date range: {results['date_range']['start']} to {results['date_range']['end']}")
+        
+        # Handle date range safely
+        start_date = results['date_range']['start']
+        end_date = results['date_range']['end']
+        if start_date and end_date:
+            print(f"Date range: {start_date} to {end_date}")
+        else:
+            print("Date range: No valid dates found in reports")
+            
         print(f"Visualizations saved to: {Path(results['visualizations']['heatmap']).parent}")
         
     except KeyboardInterrupt:

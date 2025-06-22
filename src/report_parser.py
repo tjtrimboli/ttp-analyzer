@@ -108,38 +108,73 @@ class ReportParser:
                 return self._parse_raw_content(f.read(), str(file_path))
                 
     def _parse_html_content(self, html_content: str, source: str) -> Dict:
-        """Parse HTML content and extract relevant information."""
-        if not BS4_SUPPORT:
-            self.logger.warning("BeautifulSoup not available, using basic text extraction")
-            return self._parse_raw_content(html_content, source)
+            """Parse HTML content and extract relevant information."""
+            if not BS4_SUPPORT:
+                self.logger.warning("BeautifulSoup not available, using basic text extraction")
+                return self._parse_raw_content(html_content, source)
             
-        soup = BeautifulSoup(html_content, 'html.parser')
-        
-        # Remove script and style elements
-        for script in soup(["script", "style"]):
-            script.decompose()
-            
-        # Extract title
-        title = ""
-        if soup.title:
-            title = soup.title.string.strip()
-        elif soup.h1:
-            title = soup.h1.get_text().strip()
-            
-        # Extract main content
-        content = soup.get_text()
-        
-        # Try to extract publication date
-        pub_date = self._extract_date(html_content)
-        
-        return {
-            'source': source,
-            'title': title,
-            'content': self._clean_content(content),
-            'publication_date': pub_date,
-            'content_type': 'html',
-            'parsed_at': datetime.utcnow().isoformat()
-        }
+            try:
+                soup = BeautifulSoup(html_content, 'html.parser')
+                
+                # Remove script and style elements
+                for script in soup(["script", "style", "nav", "header", "footer"]):
+                    script.decompose()
+                
+                # Extract title
+                title = ""
+                if soup.title:
+                    title = soup.title.string.strip() if soup.title.string else ""
+                elif soup.h1:
+                    title = soup.h1.get_text().strip()
+                
+                # Extract main content - try to find article or main content areas
+                content_elements = soup.find_all(['article', 'main', 'div'])
+                content = ""
+                
+                for element in content_elements:
+                    if element.get('class'):
+                        classes = ' '.join(element.get('class', []))
+                        # Look for content-related class names
+                        if any(keyword in classes.lower() for keyword in 
+                            ['content', 'article', 'post', 'body', 'main', 'text']):
+                            content += element.get_text() + "\n"
+                
+                # If no specific content areas found, get all text
+                if not content.strip():
+                    content = soup.get_text()
+                
+                # Clean content
+                cleaned_content = self._clean_content(content)
+                
+                # Check if content is too short (likely extraction failed)
+                if len(cleaned_content.strip()) < 100:
+                    self.logger.warning(f"Very short content extracted from {source}")
+                    # Try alternative extraction
+                    for tag in ['p', 'div', 'span']:
+                        elements = soup.find_all(tag)
+                        alt_content = ' '.join([elem.get_text() for elem in elements])
+                        if len(alt_content) > len(cleaned_content):
+                            cleaned_content = self._clean_content(alt_content)
+                            break
+                
+                # Try to extract publication date
+                pub_date = self._extract_date(html_content)
+                
+                result = {
+                    'source': source,
+                    'title': title,
+                    'content': cleaned_content,
+                    'publication_date': pub_date,
+                    'content_type': 'html',
+                    'parsed_at': datetime.utcnow().isoformat()
+                }
+                
+                self.logger.debug(f"Extracted {len(cleaned_content)} characters from HTML")
+                return result
+                
+            except Exception as e:
+                self.logger.error(f"Error parsing HTML content: {e}")
+                return self._parse_raw_content(html_content, source)
         
     def _parse_pdf_content(self, pdf_content: bytes, source: str) -> Dict:
         """Parse PDF content and extract text."""

@@ -71,23 +71,42 @@ class TimelineAnalyzer:
         }
         
     def _get_date_range(self, dated_ttps: List[Dict]) -> Dict:
-        """Get the date range of TTP activity."""
-        if not dated_ttps:
-            return {'start': None, 'end': None, 'duration_days': 0}
-        
-        start_date = dated_ttps[0]['date']
-        end_date = dated_ttps[-1]['date']
-        
-        # Calculate duration
-        start_dt = datetime.fromisoformat(start_date)
-        end_dt = datetime.fromisoformat(end_date)
-        duration = (end_dt - start_dt).days
-        
-        return {
-            'start': start_date,
-            'end': end_date,
-            'duration_days': duration
-        }
+            """Get the date range of TTP activity."""
+            if not dated_ttps:
+                return {'start': None, 'end': None, 'duration_days': 0}
+            
+            # Filter out invalid dates and sort
+            valid_dated_ttps = []
+            for ttp in dated_ttps:
+                date_str = ttp.get('date')
+                if date_str:
+                    try:
+                        # Validate that it's a proper ISO date
+                        datetime.fromisoformat(date_str)
+                        valid_dated_ttps.append(ttp)
+                    except (ValueError, TypeError):
+                        # Skip invalid dates
+                        continue
+            
+            if not valid_dated_ttps:
+                return {'start': None, 'end': None, 'duration_days': 0}
+            
+            # Sort by date
+            valid_dated_ttps.sort(key=lambda x: x['date'])
+            
+            start_date = valid_dated_ttps[0]['date']
+            end_date = valid_dated_ttps[-1]['date']
+            
+            # Calculate duration
+            start_dt = datetime.fromisoformat(start_date)
+            end_dt = datetime.fromisoformat(end_date)
+            duration = (end_dt - start_dt).days
+            
+            return {
+                'start': start_date,
+                'end': end_date,
+                'duration_days': duration
+            }
         
     def _analyze_monthly_breakdown(self, dated_ttps: List[Dict]) -> Dict:
         """Analyze TTP distribution by month."""

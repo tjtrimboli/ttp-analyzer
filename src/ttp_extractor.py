@@ -30,20 +30,27 @@ class TTPExtractor:
         data_file = Path(self.config.ATTACK_DATA_FILE)
         
         if not data_file.exists():
-            self.logger.warning(f"ATT&CK data file not found: {data_file}")
-            self.logger.info("Downloading latest ATT&CK data...")
-            return self._download_attack_data()
+            self.logger.error(f"ATT&CK data file not found: {data_file}")
+            self.logger.error("Please run: python ttp_analyzer.py --update-attack-data")
+            return self._get_default_attack_data()
         
         try:
             with open(data_file, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except Exception as e:
             self.logger.error(f"Failed to load ATT&CK data: {e}")
+            self.logger.error("Try running: python ttp_analyzer.py --update-attack-data")
             return self._get_default_attack_data()
-            
-    def _download_attack_data(self) -> Dict:
-        """Download MITRE ATT&CK data from official source."""
+
+    def download_attack_data(self) -> bool:
+        """
+        Download MITRE ATT&CK data from official source.
+        
+        Returns:
+            bool: True if download was successful, False otherwise
+        """
         try:
+            self.logger.info("Downloading MITRE ATT&CK data...")
             url = "https://raw.githubusercontent.com/mitre/cti/master/enterprise-attack/enterprise-attack.json"
             response = requests.get(url, timeout=30)
             response.raise_for_status()
@@ -57,12 +64,17 @@ class TTPExtractor:
             with open(data_file, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2)
                 
-            self.logger.info("ATT&CK data downloaded successfully")
-            return data
+            self.logger.info(f"ATT&CK data downloaded and saved to: {data_file}")
+            
+            # Update internal data and recompile patterns
+            self.attack_data = data
+            self._compile_patterns()
+            
+            return True
             
         except Exception as e:
             self.logger.error(f"Failed to download ATT&CK data: {e}")
-            return self._get_default_attack_data()
+            return False
             
     def _get_default_attack_data(self) -> Dict:
         """Get default ATT&CK data with common techniques."""
@@ -83,8 +95,47 @@ class TTPExtractor:
                     "name": "Process Injection",
                     "description": "Process injection is a method of executing arbitrary code.",
                     "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "privilege-escalation"}]
+                },
+                {
+                    "type": "attack-pattern",
+                    "id": "attack-pattern--7bc57495-ea59-4380-be31-a64af124ef18",
+                    "external_references": [{"external_id": "T1059", "source_name": "mitre-attack"}],
+                    "name": "Command and Scripting Interpreter",
+                    "description": "Adversaries may abuse command and script interpreters to execute commands, scripts, or binaries.",
+                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "execution"}]
+                },
+                {
+                    "type": "attack-pattern",
+                    "id": "attack-pattern--e6919abc-99f9-4c6c-95a5-14761e7b2add",
+                    "external_references": [{"external_id": "T1105", "source_name": "mitre-attack"}],
+                    "name": "Ingress Tool Transfer",
+                    "description": "Adversaries may transfer tools or other files from an external system into a compromised environment.",
+                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "command-and-control"}]
+                },
+                {
+                    "type": "attack-pattern",
+                    "id": "attack-pattern--7bc57495-ea59-4380-be31-a64af124ef19",
+                    "external_references": [{"external_id": "T1083", "source_name": "mitre-attack"}],
+                    "name": "File and Directory Discovery",
+                    "description": "Adversaries may enumerate files and directories or may search in specific locations of a host or network share for certain information within a file system.",
+                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "discovery"}]
+                },
+                {
+                    "type": "attack-pattern",
+                    "id": "attack-pattern--799ace7f-e227-4411-baa0-8868704f2a69",
+                    "external_references": [{"external_id": "T1070", "source_name": "mitre-attack"}],
+                    "name": "Indicator Removal on Host",
+                    "description": "Adversaries may delete or alter generated artifacts on a host system, including logs or captured files such as quarantined malware.",
+                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "defense-evasion"}]
+                },
+                {
+                    "type": "attack-pattern",
+                    "id": "attack-pattern--b3d682b6-98f2-4fb0-aa3b-b4df007ca70a",
+                    "external_references": [{"external_id": "T1027", "source_name": "mitre-attack"}],
+                    "name": "Obfuscated Files or Information",
+                    "description": "Adversaries may attempt to make an executable or file difficult to discover or analyze by encrypting, encoding, or otherwise obfuscating its contents on the system or in transit.",
+                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "defense-evasion"}]
                 }
-                # Add more default techniques as needed
             ]
         }
         
@@ -163,45 +214,68 @@ class TTPExtractor:
             List of extracted TTP dictionaries
         """
         content = report_data.get('content', '')
+        
+        # Check if content is empty or too short
+        if not content or len(content.strip()) < 50:
+            self.logger.warning(f"Report content is empty or too short: {report_data.get('source', 'unknown')}")
+            return []
+        
         content_lower = content.lower()
         
         extracted_ttps = []
-        matched_techniques = set()  # Avoid duplicates
+        matched_techniques = set()  # Avoid duplicates within this report
         
         # Search for techniques using compiled patterns
         for pattern, technique_id in self.technique_patterns:
-            matches = re.finditer(pattern, content_lower, re.IGNORECASE)
+            if technique_id in matched_techniques:
+                continue  # Skip if already matched
+                
+            matches = list(re.finditer(pattern, content_lower, re.IGNORECASE))
             
-            for match in matches:
-                if technique_id not in matched_techniques:
-                    technique_info = self.techniques.get(technique_id, {})
-                    
-                    ttp = {
-                        'technique_id': technique_id,
-                        'technique_name': technique_info.get('name', ''),
-                        'tactic': technique_info.get('tactic', 'unknown'),
-                        'description': technique_info.get('description', ''),
-                        'matched_text': match.group(),
-                        'match_position': match.start(),
-                        'confidence': self._calculate_confidence(match.group(), technique_info),
-                        'source': report_data.get('source', ''),
-                        'report_title': report_data.get('title', ''),
-                        'date': self._parse_date(report_data.get('publication_date')),
-                        'extracted_at': datetime.utcnow().isoformat()
-                    }
-                    
-                    extracted_ttps.append(ttp)
-                    matched_techniques.add(technique_id)
+            if matches:
+                # Use the first match for this technique
+                match = matches[0]
+                technique_info = self.techniques.get(technique_id, {})
+                
+                ttp = {
+                    'technique_id': technique_id,
+                    'technique_name': technique_info.get('name', ''),
+                    'tactic': technique_info.get('tactic', 'unknown'),
+                    'description': technique_info.get('description', ''),
+                    'matched_text': match.group(),
+                    'match_position': match.start(),
+                    'confidence': self._calculate_confidence(match.group(), technique_info),
+                    'source': report_data.get('source', ''),
+                    'report_title': report_data.get('title', ''),
+                    'date': self._parse_date(report_data.get('publication_date')),
+                    'extracted_at': datetime.utcnow().isoformat(),
+                    'match_count': len(matches)  # Track how many times this technique was mentioned
+                }
+                
+                extracted_ttps.append(ttp)
+                matched_techniques.add(technique_id)
         
-        # Additional heuristic-based extraction
-        heuristic_ttps = self._extract_heuristic_ttps(report_data)
+        # Additional heuristic-based extraction (only if not already matched)
+        heuristic_ttps = self._extract_heuristic_ttps(report_data, matched_techniques)
         extracted_ttps.extend(heuristic_ttps)
         
-        self.logger.info(f"Extracted {len(extracted_ttps)} TTPs from report")
+        # Sort by confidence (highest first)
+        extracted_ttps.sort(key=lambda x: x.get('confidence', 0), reverse=True)
+        
+        self.logger.info(f"Extracted {len(extracted_ttps)} unique TTPs from report")
+        if len(extracted_ttps) == 0:
+            self.logger.warning(f"No TTPs extracted from: {report_data.get('source', 'unknown')}")
+            # Log a sample of the content for debugging
+            sample_content = content[:500] + "..." if len(content) > 500 else content
+            self.logger.debug(f"Content sample: {sample_content}")
+        
         return extracted_ttps
         
-    def _extract_heuristic_ttps(self, report_data: Dict) -> List[Dict]:
+    def _extract_heuristic_ttps(self, report_data: Dict, already_matched: set = None) -> List[Dict]:
         """Extract TTPs using heuristic patterns for common attack behaviors."""
+        if already_matched is None:
+            already_matched = set()
+            
         content = report_data.get('content', '').lower()
         heuristic_ttps = []
         
@@ -226,35 +300,48 @@ class TTPExtractor:
             'T1027': [  # Obfuscated Files or Information
                 r'\b(obfuscat|encrypt|encod|pack|hide).{0,20}(payload|code|file)\b',
                 r'\b(base64|xor|cipher|steganograph)\b'
+            ],
+            'T1078': [  # Valid Accounts
+                r'\b(compromise|stolen|hijack).{0,20}(account|credential|login)\b',
+                r'\b(account takeover|credential theft)\b'
+            ],
+            'T1566': [  # Phishing
+                r'\b(phishing|spear.?phish|malicious.?email)\b',
+                r'\b(email.?attack|fraudulent.?message)\b'
             ]
         }
         
         for technique_id, patterns in heuristic_patterns.items():
-            for pattern in patterns:
-                matches = re.finditer(pattern, content, re.IGNORECASE)
+            # Skip if already matched by exact patterns
+            if technique_id in already_matched:
+                continue
                 
-                for match in matches:
+            for pattern in patterns:
+                matches = list(re.finditer(pattern, content, re.IGNORECASE))
+                
+                if matches:
                     technique_info = self.techniques.get(technique_id, {})
+                    match = matches[0]  # Use first match
                     
-                    # Only add if we haven't already matched this technique
-                    if not any(ttp['technique_id'] == technique_id for ttp in heuristic_ttps):
-                        ttp = {
-                            'technique_id': technique_id,
-                            'technique_name': technique_info.get('name', f'Technique {technique_id}'),
-                            'tactic': technique_info.get('tactic', 'unknown'),
-                            'description': technique_info.get('description', ''),
-                            'matched_text': match.group(),
-                            'match_position': match.start(),
-                            'confidence': 0.6,  # Lower confidence for heuristic matches
-                            'source': report_data.get('source', ''),
-                            'report_title': report_data.get('title', ''),
-                            'date': self._parse_date(report_data.get('publication_date')),
-                            'extracted_at': datetime.utcnow().isoformat(),
-                            'extraction_method': 'heuristic'
-                        }
-                        
-                        heuristic_ttps.append(ttp)
-                        break  # Only match once per technique per report
+                    ttp = {
+                        'technique_id': technique_id,
+                        'technique_name': technique_info.get('name', f'Technique {technique_id}'),
+                        'tactic': technique_info.get('tactic', 'unknown'),
+                        'description': technique_info.get('description', ''),
+                        'matched_text': match.group(),
+                        'match_position': match.start(),
+                        'confidence': 0.6,  # Lower confidence for heuristic matches
+                        'source': report_data.get('source', ''),
+                        'report_title': report_data.get('title', ''),
+                        'date': self._parse_date(report_data.get('publication_date')),
+                        'extracted_at': datetime.utcnow().isoformat(),
+                        'extraction_method': 'heuristic',
+                        'match_count': len(matches)
+                    }
+                    
+                    heuristic_ttps.append(ttp)
+                    already_matched.add(technique_id)
+                    break  # Only match once per technique per report
         
         return heuristic_ttps
         
@@ -283,25 +370,61 @@ class TTPExtractor:
         if not date_str:
             return None
             
+        # Clean up the date string
+        date_str = date_str.strip()
+        
+        # Skip obviously invalid dates (like '925-11-11')
+        if re.match(r'^\d{3}-\d{1,2}-\d{1,2}$', date_str):
+            self.logger.debug(f"Skipping invalid date format: '{date_str}'")
+            return None
+        
+        # Handle malformed dates like '2-16-16' (MM-DD-YY format)
+        if re.match(r'^\d{1,2}-\d{1,2}-\d{1,2}$', date_str):
+            parts = date_str.split('-')
+            if len(parts) == 3:
+                month, day, year = parts
+                # Assume 2-digit years in 00-30 range are 2000s, 31+ are 1900s
+                if len(year) == 2:
+                    try:
+                        year_int = int(year)
+                        if year_int <= 30:
+                            year = f"20{year}"
+                        else:
+                            year = f"19{year}"
+                        
+                        # Reconstruct as MM/DD/YYYY
+                        date_str = f"{month.zfill(2)}/{day.zfill(2)}/{year}"
+                    except (ValueError, TypeError):
+                        return None
+        
         # Try to parse various date formats
         date_formats = [
             '%Y-%m-%d',
             '%m/%d/%Y',
-            '%d/%m/%Y',
+            '%d/%m/%Y', 
+            '%m-%d-%Y',
+            '%d-%m-%Y',
             '%B %d, %Y',
             '%d %B %Y',
-            '%b %d %Y'
+            '%b %d %Y',
+            '%b %d, %Y',
+            '%Y/%m/%d',
+            '%d.%m.%Y',
+            '%m.%d.%Y'
         ]
         
         for fmt in date_formats:
             try:
-                dt = datetime.strptime(date_str.strip(), fmt)
-                return dt.date().isoformat()
+                dt = datetime.strptime(date_str, fmt)
+                # Validate the parsed date is reasonable (between 1900 and 2030)
+                if 1900 <= dt.year <= 2030:
+                    return dt.date().isoformat()
             except ValueError:
                 continue
-                
-        # If no format matches, return the original string
-        return date_str
+        
+        # If no format matches, log as debug (not warning to reduce noise)
+        self.logger.debug(f"Could not parse date: '{date_str}'")
+        return None
         
     def get_technique_info(self, technique_id: str) -> Optional[Dict]:
         """Get information about a specific technique."""
