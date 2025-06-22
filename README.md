@@ -73,7 +73,15 @@ https://example.com/apt1-analysis-2024.html
 https://example.com/apt1-campaign-report.pdf
 ```
 
-### 3. Run Analysis
+### 3. Download MITRE ATT&CK Data
+
+Before running analysis, download the latest MITRE ATT&CK framework data:
+
+```bash
+python ttp_analyzer.py --update-attack-data
+```
+
+### 4. Run Analysis
 
 Analyze a specific threat actor:
 
@@ -93,7 +101,7 @@ Enable verbose logging:
 python ttp_analyzer.py --actor scattered_spider --verbose
 ```
 
-### 4. View Results
+### 5. View Results
 
 Analysis results are saved to `output/{actor_name}/`:
 
@@ -138,6 +146,9 @@ export TTP_MIN_CONFIDENCE="0.5"
 ### Basic Analysis
 
 ```bash
+# Download MITRE ATT&CK data (required on first run)
+python ttp_analyzer.py --update-attack-data
+
 # Analyze APT1 threat actor
 python ttp_analyzer.py --actor APT1
 

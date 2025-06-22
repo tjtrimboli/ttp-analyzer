@@ -19,6 +19,7 @@ help:
 	@echo "  clean        - Clean up temporary files"
 	@echo ""
 	@echo "Usage Commands:"
+	@echo "  update-data  - Download MITRE ATT&CK framework data"
 	@echo "  list-actors  - List available threat actors"
 	@echo "  run-test     - Run analysis on test actor"
 	@echo "  example      - Create example directory structure"
@@ -81,6 +82,10 @@ clean:
 	@echo "Cleanup complete!"
 
 # Usage commands
+update-data:
+	@echo "Downloading MITRE ATT&CK framework data..."
+	python ttp_analyzer.py --update-attack-data
+
 list-actors:
 	@echo "Available threat actors:"
 	python ttp_analyzer.py --list-actors
@@ -95,11 +100,12 @@ docs:
 	sphinx-build -b html docs/ docs/_build/
 
 # Quick start workflow
-quickstart: install setup example test-install
+quickstart: install setup example update-data test-install
 	@echo ""
 	@echo "🎉 TTP Analyzer setup complete!"
 	@echo ""
 	@echo "Quick start commands:"
+	@echo "  make update-data  - Download ATT&CK data"
 	@echo "  make list-actors  - See available threat actors"
 	@echo "  make run-test     - Run sample analysis"
 	@echo ""

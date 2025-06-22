@@ -1,0 +1,6 @@
+https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a
+https://www.fsisac.com/hubfs/Knowledge/ScatteredSpider&BlackCatRansomware-MitigationGuidance.pdf
+https://www.trellix.com/blogs/research/scattered-spider-the-modus-operandi/
+https://www.guidepointsecurity.com/blog/worldwide-web-an-analysis-of-tactics-and-techniques-attributed-to-scattered-spider/
+https://cyble.com/threat-actor-profiles/scattered-spider/
+https://www.halcyon.ai/blog/scattered-spider-tactics-observed-amid-shift-to-us-targets
