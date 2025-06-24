@@ -5,7 +5,7 @@ TTP Extractor Module for identifying MITRE ATT&CK techniques in threat intellige
 import re
 import json
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Set
 from pathlib import Path
 from datetime import datetime
 import requests
@@ -30,16 +30,20 @@ class TTPExtractor:
         data_file = Path(self.config.ATTACK_DATA_FILE)
         
         if not data_file.exists():
-            self.logger.error(f"ATT&CK data file not found: {data_file}")
-            self.logger.error("Please run: python ttp_analyzer.py --update-attack-data")
-            return self._get_default_attack_data()
+            self.logger.warning(f"ATT&CK data file not found: {data_file}")
+            self.logger.info("Downloading latest ATT&CK data...")
+            if self.download_attack_data():
+                # Reload after successful download
+                with open(data_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            else:
+                return self._get_default_attack_data()
         
         try:
             with open(data_file, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except Exception as e:
             self.logger.error(f"Failed to load ATT&CK data: {e}")
-            self.logger.error("Try running: python ttp_analyzer.py --update-attack-data")
             return self._get_default_attack_data()
 
     def download_attack_data(self) -> bool:
@@ -95,46 +99,6 @@ class TTPExtractor:
                     "name": "Process Injection",
                     "description": "Process injection is a method of executing arbitrary code.",
                     "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "privilege-escalation"}]
-                },
-                {
-                    "type": "attack-pattern",
-                    "id": "attack-pattern--7bc57495-ea59-4380-be31-a64af124ef18",
-                    "external_references": [{"external_id": "T1059", "source_name": "mitre-attack"}],
-                    "name": "Command and Scripting Interpreter",
-                    "description": "Adversaries may abuse command and script interpreters to execute commands, scripts, or binaries.",
-                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "execution"}]
-                },
-                {
-                    "type": "attack-pattern",
-                    "id": "attack-pattern--e6919abc-99f9-4c6c-95a5-14761e7b2add",
-                    "external_references": [{"external_id": "T1105", "source_name": "mitre-attack"}],
-                    "name": "Ingress Tool Transfer",
-                    "description": "Adversaries may transfer tools or other files from an external system into a compromised environment.",
-                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "command-and-control"}]
-                },
-                {
-                    "type": "attack-pattern",
-                    "id": "attack-pattern--7bc57495-ea59-4380-be31-a64af124ef19",
-                    "external_references": [{"external_id": "T1083", "source_name": "mitre-attack"}],
-                    "name": "File and Directory Discovery",
-                    "description": "Adversaries may enumerate files and directories or may search in specific locations of a host or network share for certain information within a file system.",
-                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "discovery"}]
-                },
-                {
-                    "type": "attack-pattern",
-                    "id": "attack-pattern--799ace7f-e227-4411-baa0-8868704f2a69",
-                    "external_references": [{"external_id": "T1070", "source_name": "mitre-attack"}],
-                    "name": "Indicator Removal on Host",
-                    "description": "Adversaries may delete or alter generated artifacts on a host system, including logs or captured files such as quarantined malware.",
-                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "defense-evasion"}]
-                },
-                {
-                    "type": "attack-pattern",
-                    "id": "attack-pattern--b3d682b6-98f2-4fb0-aa3b-b4df007ca70a",
-                    "external_references": [{"external_id": "T1027", "source_name": "mitre-attack"}],
-                    "name": "Obfuscated Files or Information",
-                    "description": "Adversaries may attempt to make an executable or file difficult to discover or analyze by encrypting, encoding, or otherwise obfuscating its contents on the system or in transit.",
-                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "defense-evasion"}]
                 }
             ]
         }
@@ -176,36 +140,39 @@ class TTPExtractor:
                     
         self.logger.info(f"Loaded {len(self.techniques)} ATT&CK techniques")
         
-    def _create_technique_patterns(self, technique_id: str, name: str) -> List[Tuple[str, str]]:
+    def _create_technique_patterns(self, technique_id: str, name: str) -> List[Tuple[str, str, float]]:
         """Create regex patterns for matching a technique."""
         patterns = []
         
-        # Pattern for technique ID (e.g., T1566.001)
+        # Pattern for exact technique ID (highest confidence)
         id_pattern = rf'\b{re.escape(technique_id)}\b'
-        patterns.append((id_pattern, technique_id))
+        patterns.append((id_pattern, technique_id, 1.0))
         
-        # Pattern for technique name (case insensitive)
         if name:
-            # Split name into words and create flexible pattern
+            # Exact name match (high confidence)
+            escaped_name = re.escape(name)
+            exact_name_pattern = rf'\b{escaped_name}\b'
+            patterns.append((exact_name_pattern, technique_id, 0.9))
+            
+            # Case-insensitive exact match
+            case_insensitive_pattern = rf'(?i)\b{escaped_name}\b'
+            patterns.append((case_insensitive_pattern, technique_id, 0.8))
+            
+            # Split name into words for partial matching (only for longer names)
             words = re.findall(r'\b\w+\b', name.lower())
-            if words:
-                # Exact name match
-                name_pattern = rf'\b{re.escape(name.lower())}\b'
-                patterns.append((name_pattern, technique_id))
-                
-                # Partial name matches for longer names
-                if len(words) > 1:
-                    # Match any 2+ consecutive words
-                    for i in range(len(words) - 1):
-                        partial = ' '.join(words[i:i+2])
-                        partial_pattern = rf'\b{re.escape(partial)}\b'
-                        patterns.append((partial_pattern, technique_id))
+            if len(words) >= 2:
+                # Match 3+ consecutive words from the name
+                for i in range(len(words) - 2):
+                    partial_words = words[i:i+3]
+                    if all(len(word) > 2 for word in partial_words):  # Avoid very short words
+                        partial_pattern = r'\b' + r'\s+'.join(re.escape(word) for word in partial_words) + r'\b'
+                        patterns.append((f'(?i){partial_pattern}', technique_id, 0.6))
         
         return patterns
         
     def extract_ttps(self, report_data: Dict) -> List[Dict]:
         """
-        Extract TTPs from a parsed report.
+        Extract TTPs from a parsed report with improved accuracy.
         
         Args:
             report_data: Parsed report data from ReportParser
@@ -220,44 +187,60 @@ class TTPExtractor:
             self.logger.warning(f"Report content is empty or too short: {report_data.get('source', 'unknown')}")
             return []
         
-        content_lower = content.lower()
-        
         extracted_ttps = []
-        matched_techniques = set()  # Avoid duplicates within this report
+        matched_techniques = {}  # Track matches per technique with best confidence
+        
+        # Pre-process content for better matching
+        processed_content = self._preprocess_content(content)
         
         # Search for techniques using compiled patterns
-        for pattern, technique_id in self.technique_patterns:
-            if technique_id in matched_techniques:
-                continue  # Skip if already matched
+        for pattern, technique_id, base_confidence in self.technique_patterns:
+            try:
+                matches = list(re.finditer(pattern, processed_content, re.IGNORECASE))
                 
-            matches = list(re.finditer(pattern, content_lower, re.IGNORECASE))
-            
-            if matches:
-                # Use the first match for this technique
-                match = matches[0]
-                technique_info = self.techniques.get(technique_id, {})
-                
-                ttp = {
-                    'technique_id': technique_id,
-                    'technique_name': technique_info.get('name', ''),
-                    'tactic': technique_info.get('tactic', 'unknown'),
-                    'description': technique_info.get('description', ''),
-                    'matched_text': match.group(),
-                    'match_position': match.start(),
-                    'confidence': self._calculate_confidence(match.group(), technique_info),
-                    'source': report_data.get('source', ''),
-                    'report_title': report_data.get('title', ''),
-                    'date': self._parse_date(report_data.get('publication_date')),
-                    'extracted_at': datetime.utcnow().isoformat(),
-                    'match_count': len(matches)  # Track how many times this technique was mentioned
-                }
-                
-                extracted_ttps.append(ttp)
-                matched_techniques.add(technique_id)
+                if matches:
+                    # Find the best match for this technique
+                    best_match = max(matches, key=lambda m: len(m.group()))
+                    
+                    # Calculate context-aware confidence
+                    context_confidence = self._calculate_context_confidence(
+                        best_match, processed_content, technique_id
+                    )
+                    final_confidence = min(base_confidence * context_confidence, 1.0)
+                    
+                    # Only keep if confidence is above threshold
+                    if final_confidence >= self.config.MIN_CONFIDENCE_THRESHOLD:
+                        # Keep the highest confidence match for this technique
+                        if (technique_id not in matched_techniques or 
+                            final_confidence > matched_techniques[technique_id]['confidence']):
+                            
+                            technique_info = self.techniques.get(technique_id, {})
+                            
+                            matched_techniques[technique_id] = {
+                                'technique_id': technique_id,
+                                'technique_name': technique_info.get('name', ''),
+                                'tactic': technique_info.get('tactic', 'unknown'),
+                                'description': technique_info.get('description', ''),
+                                'matched_text': best_match.group(),
+                                'match_position': best_match.start(),
+                                'confidence': final_confidence,
+                                'source': report_data.get('source', ''),
+                                'report_title': report_data.get('title', ''),
+                                'date': self._parse_date(report_data.get('publication_date')),
+                                'extracted_at': datetime.utcnow().isoformat(),
+                                'match_count': len(matches),
+                                'extraction_method': 'pattern'
+                            }
+                            
+            except re.error as e:
+                self.logger.warning(f"Regex error with pattern for {technique_id}: {e}")
+                continue
         
-        # Additional heuristic-based extraction (only if not already matched)
-        heuristic_ttps = self._extract_heuristic_ttps(report_data, matched_techniques)
-        extracted_ttps.extend(heuristic_ttps)
+        # Convert matched techniques to list
+        extracted_ttps = list(matched_techniques.values())
+        
+        # Additional validation and filtering
+        extracted_ttps = self._validate_and_filter_ttps(extracted_ttps, processed_content)
         
         # Sort by confidence (highest first)
         extracted_ttps.sort(key=lambda x: x.get('confidence', 0), reverse=True)
@@ -265,141 +248,139 @@ class TTPExtractor:
         self.logger.info(f"Extracted {len(extracted_ttps)} unique TTPs from report")
         if len(extracted_ttps) == 0:
             self.logger.warning(f"No TTPs extracted from: {report_data.get('source', 'unknown')}")
-            # Log a sample of the content for debugging
-            sample_content = content[:500] + "..." if len(content) > 500 else content
-            self.logger.debug(f"Content sample: {sample_content}")
         
         return extracted_ttps
+    
+    def _preprocess_content(self, content: str) -> str:
+        """Preprocess content for better matching."""
+        # Normalize whitespace
+        content = re.sub(r'\s+', ' ', content)
         
-    def _extract_heuristic_ttps(self, report_data: Dict, already_matched: set = None) -> List[Dict]:
-        """Extract TTPs using heuristic patterns for common attack behaviors."""
-        if already_matched is None:
-            already_matched = set()
-            
-        content = report_data.get('content', '').lower()
-        heuristic_ttps = []
+        # Remove certain formatting that might interfere with matching
+        content = re.sub(r'[^\w\s.,;:!()\-]', ' ', content)
         
-        # Define heuristic patterns for common attack behaviors
-        heuristic_patterns = {
-            'T1059': [  # Command and Scripting Interpreter
-                r'\b(powershell|cmd\.exe|command line|shell|bash|script)\b',
-                r'\b(execute|run|invoke).{0,20}(command|script|powershell|cmd)\b'
-            ],
-            'T1105': [  # Ingress Tool Transfer
-                r'\b(download|upload|transfer|retrieve).{0,20}(tool|payload|file)\b',
-                r'\b(wget|curl|certutil|bitsadmin)\b'
-            ],
-            'T1083': [  # File and Directory Discovery
-                r'\b(enumerate|list|discover).{0,20}(file|director|folder)\b',
-                r'\b(dir|ls|find|search).{0,20}command\b'
-            ],
-            'T1070': [  # Indicator Removal on Host
-                r'\b(delete|remove|clear|wipe).{0,20}(log|trace|evidence|artifact)\b',
-                r'\b(anti-forensic|cover.{0,10}track)\b'
-            ],
-            'T1027': [  # Obfuscated Files or Information
-                r'\b(obfuscat|encrypt|encod|pack|hide).{0,20}(payload|code|file)\b',
-                r'\b(base64|xor|cipher|steganograph)\b'
-            ],
-            'T1078': [  # Valid Accounts
-                r'\b(compromise|stolen|hijack).{0,20}(account|credential|login)\b',
-                r'\b(account takeover|credential theft)\b'
-            ],
-            'T1566': [  # Phishing
-                r'\b(phishing|spear.?phish|malicious.?email)\b',
-                r'\b(email.?attack|fraudulent.?message)\b'
-            ]
-        }
+        # Normalize common variations
+        content = re.sub(r'\bT(\d{4})\.(\d{3})\b', r'T\1.\2', content)  # Normalize technique IDs
         
-        for technique_id, patterns in heuristic_patterns.items():
-            # Skip if already matched by exact patterns
-            if technique_id in already_matched:
+        return content.strip()
+    
+    def _calculate_context_confidence(self, match, content: str, technique_id: str) -> float:
+        """Calculate confidence based on context around the match."""
+        confidence = 1.0
+        
+        match_text = match.group().lower()
+        match_start = match.start()
+        match_end = match.end()
+        
+        # Get context around the match (100 characters before and after)
+        context_start = max(0, match_start - 100)
+        context_end = min(len(content), match_end + 100)
+        context = content[context_start:context_end].lower()
+        
+        # Boost confidence for security-related context
+        security_indicators = [
+            'attack', 'malware', 'threat', 'vulnerability', 'exploit', 'mitre',
+            'technique', 'tactic', 'apt', 'campaign', 'adversary', 'attacker',
+            'compromise', 'intrusion', 'infiltration', 'breach', 'incident'
+        ]
+        
+        security_score = sum(1 for indicator in security_indicators if indicator in context)
+        if security_score > 0:
+            confidence += min(security_score * 0.1, 0.3)
+        
+        # Reduce confidence for very short matches (likely false positives)
+        if len(match_text) < 4:
+            confidence *= 0.5
+        
+        # Reduce confidence if match appears to be part of a URL or filename
+        if re.search(r'[/\\.]', context[max(0, match_start - context_start - 10):
+                                        min(len(context), match_end - context_start + 10)]):
+            confidence *= 0.3
+        
+        # Boost confidence for technique ID matches
+        if re.match(r'^T\d{4}', match_text):
+            confidence += 0.2
+        
+        # Check if it's a common word that might be a false positive
+        common_words = ['access', 'data', 'file', 'service', 'process', 'network', 'system']
+        if match_text in common_words and security_score == 0:
+            confidence *= 0.4
+        
+        return min(confidence, 1.0)
+    
+    def _validate_and_filter_ttps(self, ttps: List[Dict], content: str) -> List[Dict]:
+        """Validate and filter TTPs to reduce false positives."""
+        validated_ttps = []
+        
+        for ttp in ttps:
+            # Skip if confidence is too low
+            if ttp['confidence'] < self.config.MIN_CONFIDENCE_THRESHOLD:
                 continue
-                
-            for pattern in patterns:
-                matches = list(re.finditer(pattern, content, re.IGNORECASE))
-                
-                if matches:
-                    technique_info = self.techniques.get(technique_id, {})
-                    match = matches[0]  # Use first match
-                    
-                    ttp = {
-                        'technique_id': technique_id,
-                        'technique_name': technique_info.get('name', f'Technique {technique_id}'),
-                        'tactic': technique_info.get('tactic', 'unknown'),
-                        'description': technique_info.get('description', ''),
-                        'matched_text': match.group(),
-                        'match_position': match.start(),
-                        'confidence': 0.6,  # Lower confidence for heuristic matches
-                        'source': report_data.get('source', ''),
-                        'report_title': report_data.get('title', ''),
-                        'date': self._parse_date(report_data.get('publication_date')),
-                        'extracted_at': datetime.utcnow().isoformat(),
-                        'extraction_method': 'heuristic',
-                        'match_count': len(matches)
-                    }
-                    
-                    heuristic_ttps.append(ttp)
-                    already_matched.add(technique_id)
-                    break  # Only match once per technique per report
+            
+            # Additional validation checks
+            if self._is_valid_ttp_match(ttp, content):
+                validated_ttps.append(ttp)
+            else:
+                self.logger.debug(f"Filtered out low-quality match: {ttp['technique_id']} - {ttp['matched_text']}")
         
-        return heuristic_ttps
+        return validated_ttps
+    
+    def _is_valid_ttp_match(self, ttp: Dict, content: str) -> bool:
+        """Validate if a TTP match is likely to be genuine."""
+        matched_text = ttp['matched_text'].lower()
+        technique_name = ttp['technique_name'].lower()
         
-    def _calculate_confidence(self, matched_text: str, technique_info: Dict) -> float:
-        """Calculate confidence score for a TTP match."""
-        confidence = 0.5  # Base confidence
+        # If it's a technique ID match, it's likely valid
+        if re.match(r'^t\d{4}', matched_text):
+            return True
         
-        # Increase confidence for exact ID matches
-        if re.match(r'T\d{4}', matched_text):
-            confidence += 0.4
+        # If the matched text is exactly the technique name, it's likely valid
+        if matched_text == technique_name:
+            return True
         
-        # Increase confidence for exact name matches
-        technique_name = technique_info.get('name', '').lower()
-        if technique_name and matched_text.lower() == technique_name:
-            confidence += 0.3
+        # Check for context clues around the match
+        match_pos = ttp['match_position']
+        context_window = 50
+        start_pos = max(0, match_pos - context_window)
+        end_pos = min(len(content), match_pos + len(matched_text) + context_window)
+        context = content[start_pos:end_pos].lower()
         
-        # Decrease confidence for very short matches
-        if len(matched_text) < 5:
-            confidence -= 0.2
+        # Look for security-related terms in context
+        security_terms = [
+            'mitre', 'att&ck', 'attack', 'technique', 'tactic', 'ttp',
+            'adversary', 'threat', 'malware', 'campaign'
+        ]
         
-        # Ensure confidence is between 0 and 1
-        return max(0.0, min(1.0, confidence))
+        has_security_context = any(term in context for term in security_terms)
+        
+        # Require security context for short or common words
+        if len(matched_text) < 6 or matched_text in ['data', 'file', 'access', 'service']:
+            return has_security_context
+        
+        return True
         
     def _parse_date(self, date_str: Optional[str]) -> Optional[str]:
-        """Parse date string into ISO format."""
+        """Parse date string into ISO format with improved validation."""
         if not date_str:
             return None
             
         # Clean up the date string
         date_str = date_str.strip()
         
-        # Skip obviously invalid dates (like '925-11-11')
-        if re.match(r'^\d{3}-\d{1,2}-\d{1,2}$', date_str):
-            self.logger.debug(f"Skipping invalid date format: '{date_str}'")
+        # Skip obviously invalid dates
+        if len(date_str) < 4:
             return None
         
-        # Handle malformed dates like '2-16-16' (MM-DD-YY format)
-        if re.match(r'^\d{1,2}-\d{1,2}-\d{1,2}$', date_str):
-            parts = date_str.split('-')
-            if len(parts) == 3:
-                month, day, year = parts
-                # Assume 2-digit years in 00-30 range are 2000s, 31+ are 1900s
-                if len(year) == 2:
-                    try:
-                        year_int = int(year)
-                        if year_int <= 30:
-                            year = f"20{year}"
-                        else:
-                            year = f"19{year}"
-                        
-                        # Reconstruct as MM/DD/YYYY
-                        date_str = f"{month.zfill(2)}/{day.zfill(2)}/{year}"
-                    except (ValueError, TypeError):
-                        return None
+        # Skip malformed dates like '925-11-11' or '2-16-16'
+        if re.match(r'^\d{1,3}-\d{1,2}-\d{1,2}', date_str):
+            self.logger.debug(f"Skipping invalid date format: '{date_str}'")
+            return None
         
         # Try to parse various date formats
         date_formats = [
             '%Y-%m-%d',
+            '%Y-%m-%dT%H:%M:%S',
+            '%Y-%m-%dT%H:%M:%SZ',
             '%m/%d/%Y',
             '%d/%m/%Y', 
             '%m-%d-%Y',
@@ -416,13 +397,34 @@ class TTPExtractor:
         for fmt in date_formats:
             try:
                 dt = datetime.strptime(date_str, fmt)
-                # Validate the parsed date is reasonable (between 1900 and 2030)
-                if 1900 <= dt.year <= 2030:
+                # Validate the parsed date is reasonable (between 2000 and 2030)
+                if 2000 <= dt.year <= 2030:
                     return dt.date().isoformat()
             except ValueError:
                 continue
         
-        # If no format matches, log as debug (not warning to reduce noise)
+        # If no standard format matches, try to extract a valid date from the string
+        # Look for patterns like "February 20, 2025" or "20 Feb 2025"
+        date_pattern = r'(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{4})'
+        match = re.search(date_pattern, date_str, re.IGNORECASE)
+        if match:
+            day, month, year = match.groups()
+            try:
+                # Convert month name to number
+                month_names = {
+                    'january': 1, 'february': 2, 'march': 3, 'april': 4, 'may': 5, 'june': 6,
+                    'july': 7, 'august': 8, 'september': 9, 'october': 10, 'november': 11, 'december': 12,
+                    'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
+                    'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12
+                }
+                month_num = month_names.get(month.lower())
+                if month_num:
+                    dt = datetime(int(year), month_num, int(day))
+                    if 2000 <= dt.year <= 2030:
+                        return dt.date().isoformat()
+            except (ValueError, TypeError):
+                pass
+        
         self.logger.debug(f"Could not parse date: '{date_str}'")
         return None
         

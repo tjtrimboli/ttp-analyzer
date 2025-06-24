@@ -1,5 +1,5 @@
 # TTP Analyzer Configuration File
-# This file contains default settings for the MITRE ATT&CK TTP Analyzer
+# Simplified configuration for reliable operation
 
 # Directory Configuration
 GROUPS_DIR: "groups"              # Directory containing threat actor subdirectories
@@ -16,14 +16,14 @@ LOG_LEVEL: "INFO"                 # Logging level: DEBUG, INFO, WARNING, ERROR, 
 LOG_FORMAT: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 # HTTP Request Settings
-REQUEST_TIMEOUT: 30               # Timeout for HTTP requests (seconds)
+REQUEST_TIMEOUT: 15               # Timeout for HTTP requests (seconds) - reduced to prevent hanging
 RATE_LIMIT_DELAY: 1.0            # Delay between requests (seconds)
 MAX_RETRIES: 3                    # Maximum number of retry attempts
 USER_AGENT: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 
 # TTP Extraction Settings
-MIN_CONFIDENCE_THRESHOLD: 0.3     # Minimum confidence score for TTP matches
-ENABLE_HEURISTIC_EXTRACTION: true # Enable heuristic-based TTP extraction
+MIN_CONFIDENCE_THRESHOLD: 0.4     # Minimum confidence score for TTP matches
+ENABLE_HEURISTIC_EXTRACTION: false # Disable heuristic extraction
 MAX_REPORT_SIZE_MB: 50            # Maximum report size to process (MB)
 
 # Visualization Settings

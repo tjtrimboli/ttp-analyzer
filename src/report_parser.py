@@ -36,7 +36,7 @@ class ReportParser:
         
         # Set up session headers
         self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            'User-Agent': self.config.USER_AGENT
         })
         
         # Rate limiting
@@ -84,7 +84,8 @@ class ReportParser:
         self._rate_limit()
         
         try:
-            response = self.session.get(url, timeout=30)
+            # Use shorter timeout to avoid hanging
+            response = self.session.get(url, timeout=15)
             response.raise_for_status()
             
             content_type = response.headers.get('content-type', '').lower()
@@ -108,73 +109,69 @@ class ReportParser:
                 return self._parse_raw_content(f.read(), str(file_path))
                 
     def _parse_html_content(self, html_content: str, source: str) -> Dict:
-            """Parse HTML content and extract relevant information."""
-            if not BS4_SUPPORT:
-                self.logger.warning("BeautifulSoup not available, using basic text extraction")
-                return self._parse_raw_content(html_content, source)
+        """Parse HTML content and extract relevant information."""
+        if not BS4_SUPPORT:
+            self.logger.warning("BeautifulSoup not available, using basic text extraction")
+            return self._parse_raw_content(html_content, source)
+        
+        try:
+            soup = BeautifulSoup(html_content, 'html.parser')
             
-            try:
-                soup = BeautifulSoup(html_content, 'html.parser')
-                
-                # Remove script and style elements
-                for script in soup(["script", "style", "nav", "header", "footer"]):
-                    script.decompose()
-                
-                # Extract title
-                title = ""
-                if soup.title:
-                    title = soup.title.string.strip() if soup.title.string else ""
-                elif soup.h1:
-                    title = soup.h1.get_text().strip()
-                
-                # Extract main content - try to find article or main content areas
-                content_elements = soup.find_all(['article', 'main', 'div'])
-                content = ""
-                
-                for element in content_elements:
-                    if element.get('class'):
-                        classes = ' '.join(element.get('class', []))
-                        # Look for content-related class names
-                        if any(keyword in classes.lower() for keyword in 
-                            ['content', 'article', 'post', 'body', 'main', 'text']):
-                            content += element.get_text() + "\n"
-                
-                # If no specific content areas found, get all text
-                if not content.strip():
-                    content = soup.get_text()
-                
-                # Clean content
-                cleaned_content = self._clean_content(content)
-                
-                # Check if content is too short (likely extraction failed)
-                if len(cleaned_content.strip()) < 100:
-                    self.logger.warning(f"Very short content extracted from {source}")
-                    # Try alternative extraction
-                    for tag in ['p', 'div', 'span']:
-                        elements = soup.find_all(tag)
-                        alt_content = ' '.join([elem.get_text() for elem in elements])
-                        if len(alt_content) > len(cleaned_content):
-                            cleaned_content = self._clean_content(alt_content)
-                            break
-                
-                # Try to extract publication date
-                pub_date = self._extract_date(html_content)
-                
-                result = {
-                    'source': source,
-                    'title': title,
-                    'content': cleaned_content,
-                    'publication_date': pub_date,
-                    'content_type': 'html',
-                    'parsed_at': datetime.utcnow().isoformat()
-                }
-                
-                self.logger.debug(f"Extracted {len(cleaned_content)} characters from HTML")
-                return result
-                
-            except Exception as e:
-                self.logger.error(f"Error parsing HTML content: {e}")
-                return self._parse_raw_content(html_content, source)
+            # Remove unwanted elements
+            for element in soup(["script", "style", "nav", "header", "footer"]):
+                element.decompose()
+            
+            # Extract title
+            title = ""
+            if soup.title:
+                title = soup.title.string.strip() if soup.title.string else ""
+            elif soup.h1:
+                title = soup.h1.get_text().strip()
+            
+            # Simple content extraction - try common content containers
+            content = ""
+            
+            # Try main content areas first
+            content_selectors = ['article', 'main', '.content', '.post-content', '.entry-content']
+            for selector in content_selectors:
+                try:
+                    elements = soup.select(selector)
+                    if elements:
+                        content = elements[0].get_text()
+                        break
+                except:
+                    continue
+            
+            # Fallback to all paragraphs
+            if not content or len(content.strip()) < 200:
+                paragraphs = soup.find_all('p')
+                content = ' '.join([p.get_text().strip() for p in paragraphs])
+            
+            # Final fallback - all text
+            if not content or len(content.strip()) < 100:
+                content = soup.get_text()
+            
+            # Clean content
+            cleaned_content = self._clean_content(content)
+            
+            # Extract publication date - simple approach
+            pub_date = self._extract_simple_date(soup, html_content)
+            
+            result = {
+                'source': source,
+                'title': title,
+                'content': cleaned_content,
+                'publication_date': pub_date,
+                'content_type': 'html',
+                'parsed_at': datetime.utcnow().isoformat()
+            }
+            
+            self.logger.debug(f"Extracted {len(cleaned_content)} characters from HTML")
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"Error parsing HTML content: {e}")
+            return self._parse_raw_content(html_content, source)
         
     def _parse_pdf_content(self, pdf_content: bytes, source: str) -> Dict:
         """Parse PDF content and extract text."""
@@ -242,28 +239,87 @@ class ReportParser:
         # Remove excessive whitespace
         content = re.sub(r'\s+', ' ', content)
         
-        # Remove special characters that might interfere with analysis
-        content = re.sub(r'[^\w\s.,;:!?()-]', ' ', content)
+        # Remove special characters but keep important punctuation
+        content = re.sub(r'[^\w\s.,;:!?()\-/\\]', ' ', content)
         
-        # Normalize case for better matching
         return content.strip()
+        
+    def _extract_simple_date(self, soup: BeautifulSoup, html_content: str) -> Optional[str]:
+        """Simple date extraction focusing on common patterns."""
+        
+        # Try meta tags first
+        meta_tags = soup.find_all('meta')
+        for meta in meta_tags:
+            if meta.get('name') in ['date', 'publish_date', 'publication_date'] or \
+               meta.get('property') in ['article:published_time', 'og:article:published_time']:
+                date_str = meta.get('content')
+                if date_str:
+                    parsed = self._parse_date_string(date_str)
+                    if parsed:
+                        return parsed
+        
+        # Try time elements
+        time_elements = soup.find_all('time')
+        for time_elem in time_elements:
+            if time_elem.get('datetime'):
+                parsed = self._parse_date_string(time_elem['datetime'])
+                if parsed:
+                    return parsed
+        
+        # Fallback to text search
+        return self._extract_date(html_content)
         
     def _extract_date(self, content: str) -> Optional[str]:
         """Extract publication date from content using regex patterns."""
+        # Look for common date patterns
         date_patterns = [
-            r'\b(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})\b',  # MM/DD/YYYY or MM-DD-YYYY
-            r'\b(\d{2,4}[-/]\d{1,2}[-/]\d{1,2})\b',  # YYYY/MM/DD or YYYY-MM-DD
-            r'\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{2,4}\b',
-            r'\b\d{1,2}\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{2,4}\b',
-            r'\b(\d{1,2}\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{2,4})\b'
+            r'\b(\d{4}-\d{1,2}-\d{1,2})\b',  # ISO format
+            r'\b(\d{1,2}[-/]\d{1,2}[-/]\d{4})\b',  # US format
+            r'\b((?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4})\b',
+            r'\b(\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4})\b'
         ]
         
         for pattern in date_patterns:
             matches = re.findall(pattern, content, re.IGNORECASE)
-            if matches:
-                # Return the first match found
-                return matches[0] if isinstance(matches[0], str) else ' '.join(matches[0])
+            for match in matches:
+                parsed = self._parse_date_string(match)
+                if parsed:
+                    return parsed
                 
+        return None
+    
+    def _parse_date_string(self, date_str: str) -> Optional[str]:
+        """Parse date string into ISO format."""
+        if not date_str:
+            return None
+            
+        date_str = date_str.strip()
+        
+        # Skip obviously invalid dates
+        if len(date_str) < 4 or re.match(r'^\d{1,3}-\d{1,2}-\d{1,2}$', date_str):
+            return None
+        
+        # Try common formats
+        date_formats = [
+            '%Y-%m-%d',
+            '%Y-%m-%dT%H:%M:%S',
+            '%Y-%m-%dT%H:%M:%SZ',
+            '%m/%d/%Y',
+            '%d/%m/%Y', 
+            '%m-%d-%Y',
+            '%B %d, %Y',
+            '%d %B %Y',
+            '%b %d, %Y'
+        ]
+        
+        for fmt in date_formats:
+            try:
+                dt = datetime.strptime(date_str, fmt)
+                if 2000 <= dt.year <= 2030:
+                    return dt.date().isoformat()
+            except ValueError:
+                continue
+        
         return None
         
     def _rate_limit(self):
