@@ -34,38 +34,56 @@ class ReportParser:
         self.logger = logging.getLogger(__name__)
         self.session = requests.Session()
         
+        # Use multiple user agents to avoid detection
+        self.user_agents = [
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0"
+        ]
+        self.current_ua_index = 0
+        
         # Set up session headers
-        self.session.headers.update({
-            'User-Agent': self.config.USER_AGENT
-        })
+        self._update_headers()
         
         # Rate limiting
         self.last_request_time = 0
         
-    def parse_report(self, source: Union[str, Path]) -> Optional[Dict]:
-        """
-        Parse a report from various sources.
+    def _update_headers(self):
+        """Update session headers with current user agent."""
+        self.session.headers.update({
+            'User-Agent': self.user_agents[self.current_ua_index],
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+        })
         
-        Args:
-            source: URL, file path, or content string
-            
-        Returns:
-            Dictionary containing parsed report data
-        """
+    def parse_report(self, source: Union[str, Path]) -> Optional[Dict]:
+        """Parse a report from various sources with retry logic."""
         self.logger.debug(f"Parsing report from: {source}")
         
-        try:
-            if isinstance(source, (str, Path)) and self._is_url(str(source)):
-                return self._parse_web_report(str(source))
-            elif isinstance(source, (str, Path)) and self._is_file_path(str(source)):
-                return self._parse_file_report(Path(source))
-            else:
-                # Treat as raw content
-                return self._parse_raw_content(str(source))
-                
-        except Exception as e:
-            self.logger.error(f"Failed to parse report from {source}: {e}")
-            return None
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                if isinstance(source, (str, Path)) and self._is_url(str(source)):
+                    return self._parse_web_report(str(source))
+                elif isinstance(source, (str, Path)) and self._is_file_path(str(source)):
+                    return self._parse_file_report(Path(source))
+                else:
+                    return self._parse_raw_content(str(source))
+                    
+            except Exception as e:
+                self.logger.warning(f"Attempt {attempt + 1} failed for {source}: {e}")
+                if attempt < max_retries - 1:
+                    # Try different user agent
+                    self.current_ua_index = (self.current_ua_index + 1) % len(self.user_agents)
+                    self._update_headers()
+                    time.sleep(2)  # Wait before retry
+                else:
+                    self.logger.error(f"All attempts failed for {source}")
+                    return None
             
     def _is_url(self, source: str) -> bool:
         """Check if source is a URL."""
@@ -84,16 +102,24 @@ class ReportParser:
         self._rate_limit()
         
         try:
-            # Use shorter timeout to avoid hanging
-            response = self.session.get(url, timeout=15)
+            # Longer timeout but with streaming to avoid memory issues
+            response = self.session.get(url, timeout=30, stream=True)
             response.raise_for_status()
             
+            # Check content size
+            content_length = response.headers.get('content-length')
+            if content_length and int(content_length) > 50 * 1024 * 1024:  # 50MB limit
+                self.logger.warning(f"Content too large: {content_length} bytes")
+                return None
+            
+            # Get content
+            content = response.text
             content_type = response.headers.get('content-type', '').lower()
             
             if 'pdf' in content_type:
                 return self._parse_pdf_content(response.content, url)
             else:
-                return self._parse_html_content(response.text, url)
+                return self._parse_html_content(content, url)
                 
         except requests.RequestException as e:
             self.logger.error(f"Failed to fetch URL {url}: {e}")
@@ -118,44 +144,20 @@ class ReportParser:
             soup = BeautifulSoup(html_content, 'html.parser')
             
             # Remove unwanted elements
-            for element in soup(["script", "style", "nav", "header", "footer"]):
+            for element in soup(["script", "style", "nav", "header", "footer", "aside", "form"]):
                 element.decompose()
             
             # Extract title
-            title = ""
-            if soup.title:
-                title = soup.title.string.strip() if soup.title.string else ""
-            elif soup.h1:
-                title = soup.h1.get_text().strip()
+            title = self._extract_title(soup)
             
-            # Simple content extraction - try common content containers
-            content = ""
-            
-            # Try main content areas first
-            content_selectors = ['article', 'main', '.content', '.post-content', '.entry-content']
-            for selector in content_selectors:
-                try:
-                    elements = soup.select(selector)
-                    if elements:
-                        content = elements[0].get_text()
-                        break
-                except:
-                    continue
-            
-            # Fallback to all paragraphs
-            if not content or len(content.strip()) < 200:
-                paragraphs = soup.find_all('p')
-                content = ' '.join([p.get_text().strip() for p in paragraphs])
-            
-            # Final fallback - all text
-            if not content or len(content.strip()) < 100:
-                content = soup.get_text()
+            # Extract content with multiple strategies
+            content = self._extract_content(soup)
             
             # Clean content
             cleaned_content = self._clean_content(content)
             
-            # Extract publication date - simple approach
-            pub_date = self._extract_simple_date(soup, html_content)
+            # Extract publication date
+            pub_date = self._extract_publication_date(soup, html_content)
             
             result = {
                 'source': source,
@@ -172,6 +174,62 @@ class ReportParser:
         except Exception as e:
             self.logger.error(f"Error parsing HTML content: {e}")
             return self._parse_raw_content(html_content, source)
+    
+    def _extract_title(self, soup: BeautifulSoup) -> str:
+        """Extract title from HTML."""
+        # Try title tag first
+        if soup.title and soup.title.string:
+            return soup.title.string.strip()
+        
+        # Try h1 tags
+        h1_tags = soup.find_all('h1')
+        for h1 in h1_tags:
+            text = h1.get_text().strip()
+            if text and len(text) > 5:
+                return text
+        
+        # Try meta tags
+        meta_title = soup.find('meta', property='og:title')
+        if meta_title and meta_title.get('content'):
+            return meta_title['content'].strip()
+        
+        return "Unknown Title"
+    
+    def _extract_content(self, soup: BeautifulSoup) -> str:
+        """Extract main content from HTML."""
+        content = ""
+        
+        # Try main content selectors in order of preference
+        selectors = [
+            'article',
+            'main', 
+            '[role="main"]',
+            '.content',
+            '.post-content',
+            '.entry-content',
+            '.article-content',
+            '.blog-post'
+        ]
+        
+        for selector in selectors:
+            try:
+                elements = soup.select(selector)
+                if elements and len(elements[0].get_text().strip()) > 200:
+                    content = elements[0].get_text()
+                    break
+            except:
+                continue
+        
+        # Fallback: get all paragraphs
+        if not content or len(content.strip()) < 200:
+            paragraphs = soup.find_all('p')
+            content = ' '.join([p.get_text().strip() for p in paragraphs if len(p.get_text().strip()) > 20])
+        
+        # Final fallback: all text
+        if not content or len(content.strip()) < 100:
+            content = soup.get_text()
+        
+        return content
         
     def _parse_pdf_content(self, pdf_content: bytes, source: str) -> Dict:
         """Parse PDF content and extract text."""
@@ -188,24 +246,23 @@ class ReportParser:
             for page in pdf_reader.pages:
                 text_content += page.extract_text() + "\n"
                 
-            # Try to extract title from metadata or first page
+            # Try to extract title from metadata
             title = ""
             if pdf_reader.metadata:
                 title = pdf_reader.metadata.get('/Title', '')
                 
             if not title and text_content:
-                # Use first non-empty line as title
                 lines = text_content.split('\n')
                 for line in lines:
                     if line.strip():
-                        title = line.strip()[:100]  # Limit title length
+                        title = line.strip()[:100]
                         break
                         
             return {
                 'source': source,
                 'title': title,
                 'content': self._clean_content(text_content),
-                'publication_date': None,  # PDFs rarely have extractable dates
+                'publication_date': None,
                 'content_type': 'pdf',
                 'parsed_at': datetime.utcnow().isoformat()
             }
@@ -219,7 +276,6 @@ class ReportParser:
         lines = content.split('\n')
         title = ""
         
-        # Try to extract title from first non-empty line
         for line in lines:
             if line.strip():
                 title = line.strip()[:100]
@@ -229,7 +285,7 @@ class ReportParser:
             'source': source,
             'title': title,
             'content': self._clean_content(content),
-            'publication_date': self._extract_date(content),
+            'publication_date': self._extract_date_from_text(content),
             'content_type': 'text',
             'parsed_at': datetime.utcnow().isoformat()
         }
@@ -240,41 +296,82 @@ class ReportParser:
         content = re.sub(r'\s+', ' ', content)
         
         # Remove special characters but keep important punctuation
-        content = re.sub(r'[^\w\s.,;:!?()\-/\\]', ' ', content)
+        content = re.sub(r'[^\w\s.,;:!?()\-/\\&]', ' ', content)
         
         return content.strip()
-        
-    def _extract_simple_date(self, soup: BeautifulSoup, html_content: str) -> Optional[str]:
-        """Simple date extraction focusing on common patterns."""
-        
+    
+    def _extract_publication_date(self, soup: BeautifulSoup, html_content: str) -> Optional[str]:
+        """Extract publication date from HTML."""
         # Try meta tags first
-        meta_tags = soup.find_all('meta')
-        for meta in meta_tags:
-            if meta.get('name') in ['date', 'publish_date', 'publication_date'] or \
-               meta.get('property') in ['article:published_time', 'og:article:published_time']:
-                date_str = meta.get('content')
-                if date_str:
-                    parsed = self._parse_date_string(date_str)
-                    if parsed:
-                        return parsed
+        meta_selectors = [
+            ('property', 'article:published_time'),
+            ('property', 'og:article:published_time'),
+            ('name', 'publication_date'),
+            ('name', 'date'),
+            ('name', 'publish_date'),
+            ('name', 'DC.date.issued'),
+            ('name', 'DC.Date.created')
+        ]
+        
+        for attr, value in meta_selectors:
+            meta = soup.find('meta', {attr: value})
+            if meta and meta.get('content'):
+                date_str = meta['content']
+                parsed_date = self._parse_date_string(date_str)
+                if parsed_date:
+                    return parsed_date
         
         # Try time elements
         time_elements = soup.find_all('time')
         for time_elem in time_elements:
             if time_elem.get('datetime'):
-                parsed = self._parse_date_string(time_elem['datetime'])
-                if parsed:
-                    return parsed
+                parsed_date = self._parse_date_string(time_elem['datetime'])
+                if parsed_date:
+                    return parsed_date
+            
+            # Check text content of time element
+            text = time_elem.get_text().strip()
+            if text:
+                parsed_date = self._parse_date_string(text)
+                if parsed_date:
+                    return parsed_date
+        
+        # Look for date in specific elements
+        date_classes = ['.date', '.publish-date', '.publication-date', '.post-date', '.article-date']
+        for class_name in date_classes:
+            elements = soup.select(class_name)
+            for elem in elements:
+                text = elem.get_text().strip()
+                parsed_date = self._parse_date_string(text)
+                if parsed_date:
+                    return parsed_date
         
         # Fallback to text search
-        return self._extract_date(html_content)
+        return self._extract_date_from_text(html_content)
+    
+    def _extract_date_from_text(self, content: str) -> Optional[str]:
+        """Extract date from text content."""
+        # Look for "Last updated" or "Published" patterns
+        update_patterns = [
+            r'(?:last\s+updated|updated)(?:\s*on)?[\s:]*([^\n\r,;]+?)(?:\n|\r|,|;|$)',
+            r'(?:published|posted|created)(?:\s*on)?[\s:]*([^\n\r,;]+?)(?:\n|\r|,|;|$)',
+            r'(?:date)[\s:]*([^\n\r,;]+?)(?:\n|\r|,|;|$)'
+        ]
         
-    def _extract_date(self, content: str) -> Optional[str]:
-        """Extract publication date from content using regex patterns."""
-        # Look for common date patterns
+        for pattern in update_patterns:
+            matches = re.finditer(pattern, content, re.IGNORECASE | re.MULTILINE)
+            for match in matches:
+                date_text = match.group(1).strip()
+                # Clean up common suffixes
+                date_text = re.sub(r'\s+(by|at|in)\s+.*$', '', date_text)
+                parsed_date = self._parse_date_string(date_text)
+                if parsed_date:
+                    return parsed_date
+        
+        # Look for standalone date patterns
         date_patterns = [
-            r'\b(\d{4}-\d{1,2}-\d{1,2})\b',  # ISO format
-            r'\b(\d{1,2}[-/]\d{1,2}[-/]\d{4})\b',  # US format
+            r'\b(\d{4}-\d{1,2}-\d{1,2})\b',
+            r'\b(\d{1,2}[-/]\d{1,2}[-/]\d{4})\b',
             r'\b((?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4})\b',
             r'\b(\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4})\b'
         ]
@@ -282,39 +379,50 @@ class ReportParser:
         for pattern in date_patterns:
             matches = re.findall(pattern, content, re.IGNORECASE)
             for match in matches:
-                parsed = self._parse_date_string(match)
-                if parsed:
-                    return parsed
+                parsed_date = self._parse_date_string(match)
+                if parsed_date:
+                    return parsed_date
                 
         return None
     
     def _parse_date_string(self, date_str: str) -> Optional[str]:
         """Parse date string into ISO format."""
-        if not date_str:
+        if not date_str or len(date_str.strip()) < 4:
             return None
             
         date_str = date_str.strip()
         
+        # Remove common prefixes/suffixes
+        date_str = re.sub(r'^(on|at|the)\s+', '', date_str, flags=re.IGNORECASE)
+        date_str = re.sub(r'\s+(at|by|in|•|–|-)\s+.*$', '', date_str, flags=re.IGNORECASE)
+        
         # Skip obviously invalid dates
-        if len(date_str) < 4 or re.match(r'^\d{1,3}-\d{1,2}-\d{1,2}$', date_str):
+        if re.match(r'^\d{1,3}-\d{1,2}-\d{1,2}$', date_str):
             return None
         
-        # Try common formats
+        # Try various date formats
         date_formats = [
             '%Y-%m-%d',
             '%Y-%m-%dT%H:%M:%S',
             '%Y-%m-%dT%H:%M:%SZ',
+            '%Y-%m-%dT%H:%M:%S.%fZ',
             '%m/%d/%Y',
             '%d/%m/%Y', 
             '%m-%d-%Y',
+            '%d-%m-%Y',
             '%B %d, %Y',
             '%d %B %Y',
-            '%b %d, %Y'
+            '%b %d, %Y',
+            '%b %d %Y',
+            '%Y/%m/%d',
+            '%d.%m.%Y',
+            '%m.%d.%Y'
         ]
         
         for fmt in date_formats:
             try:
                 dt = datetime.strptime(date_str, fmt)
+                # Validate reasonable date range
                 if 2000 <= dt.year <= 2030:
                     return dt.date().isoformat()
             except ValueError:
@@ -323,13 +431,12 @@ class ReportParser:
         return None
         
     def _rate_limit(self):
-        """Implement basic rate limiting for web requests."""
+        """Implement rate limiting for web requests."""
         current_time = time.time()
         time_since_last = current_time - self.last_request_time
         
         if time_since_last < self.config.RATE_LIMIT_DELAY:
             sleep_time = self.config.RATE_LIMIT_DELAY - time_since_last
-            self.logger.debug(f"Rate limiting: sleeping for {sleep_time:.2f} seconds")
             time.sleep(sleep_time)
             
         self.last_request_time = time.time()

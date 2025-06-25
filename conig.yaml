@@ -1,5 +1,5 @@
 # TTP Analyzer Configuration File
-# Simplified configuration for reliable operation
+# Final optimized configuration for accurate results
 
 # Directory Configuration
 GROUPS_DIR: "groups"              # Directory containing threat actor subdirectories
@@ -16,14 +16,14 @@ LOG_LEVEL: "INFO"                 # Logging level: DEBUG, INFO, WARNING, ERROR, 
 LOG_FORMAT: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 # HTTP Request Settings
-REQUEST_TIMEOUT: 15               # Timeout for HTTP requests (seconds) - reduced to prevent hanging
-RATE_LIMIT_DELAY: 1.0            # Delay between requests (seconds)
+REQUEST_TIMEOUT: 30               # Timeout for HTTP requests (seconds)
+RATE_LIMIT_DELAY: 2.0            # Delay between requests (seconds) - be polite to servers
 MAX_RETRIES: 3                    # Maximum number of retry attempts
-USER_AGENT: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+USER_AGENT: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
 # TTP Extraction Settings
-MIN_CONFIDENCE_THRESHOLD: 0.4     # Minimum confidence score for TTP matches
-ENABLE_HEURISTIC_EXTRACTION: false # Disable heuristic extraction
+MIN_CONFIDENCE_THRESHOLD: 0.7     # High threshold to reduce false positives
+ENABLE_HEURISTIC_EXTRACTION: false # Disabled to prevent over-extraction
 MAX_REPORT_SIZE_MB: 50            # Maximum report size to process (MB)
 
 # Visualization Settings
@@ -36,6 +36,6 @@ PHASE_WINDOW_DAYS: 30             # Window size for campaign phase analysis (day
 ACTIVITY_GAP_THRESHOLD_DAYS: 30   # Threshold for detecting activity gaps (days)
 
 # Performance Settings
-MAX_CONCURRENT_REQUESTS: 5        # Maximum concurrent HTTP requests
+MAX_CONCURRENT_REQUESTS: 3        # Conservative to avoid being blocked
 CACHE_REPORTS: true               # Enable report caching
 CACHE_DURATION_HOURS: 24          # Cache duration (hours)
