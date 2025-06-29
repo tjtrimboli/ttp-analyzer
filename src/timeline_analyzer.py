@@ -29,15 +29,27 @@ class TimelineAnalyzer:
         """
         self.logger.info(f"Analyzing timeline for {len(ttps)} TTPs")
         
-        # Filter TTPs with valid dates
-        dated_ttps = [ttp for ttp in ttps if ttp.get('date')]
+        # Filter TTPs with valid dates and convert to datetime objects
+        dated_ttps = []
+        for ttp in ttps:
+            date_str = ttp.get('date')
+            if date_str:
+                try:
+                    # Parse ISO date string to datetime object
+                    dt = datetime.fromisoformat(date_str)
+                    ttp_copy = ttp.copy()
+                    ttp_copy['datetime'] = dt
+                    dated_ttps.append(ttp_copy)
+                except (ValueError, TypeError) as e:
+                    self.logger.debug(f"Could not parse date '{date_str}': {e}")
+                    continue
         
         if not dated_ttps:
             self.logger.warning("No TTPs with valid dates found")
             return self._get_empty_timeline()
         
-        # Sort TTPs by date
-        dated_ttps.sort(key=lambda x: x['date'])
+        # Sort TTPs by datetime
+        dated_ttps.sort(key=lambda x: x['datetime'])
         
         # Perform various timeline analyses
         analysis = {
@@ -71,42 +83,19 @@ class TimelineAnalyzer:
         }
         
     def _get_date_range(self, dated_ttps: List[Dict]) -> Dict:
-            """Get the date range of TTP activity."""
-            if not dated_ttps:
-                return {'start': None, 'end': None, 'duration_days': 0}
-            
-            # Filter out invalid dates and sort
-            valid_dated_ttps = []
-            for ttp in dated_ttps:
-                date_str = ttp.get('date')
-                if date_str:
-                    try:
-                        # Validate that it's a proper ISO date
-                        datetime.fromisoformat(date_str)
-                        valid_dated_ttps.append(ttp)
-                    except (ValueError, TypeError):
-                        # Skip invalid dates
-                        continue
-            
-            if not valid_dated_ttps:
-                return {'start': None, 'end': None, 'duration_days': 0}
-            
-            # Sort by date
-            valid_dated_ttps.sort(key=lambda x: x['date'])
-            
-            start_date = valid_dated_ttps[0]['date']
-            end_date = valid_dated_ttps[-1]['date']
-            
-            # Calculate duration
-            start_dt = datetime.fromisoformat(start_date)
-            end_dt = datetime.fromisoformat(end_date)
-            duration = (end_dt - start_dt).days
-            
-            return {
-                'start': start_date,
-                'end': end_date,
-                'duration_days': duration
-            }
+        """Get the date range of TTP activity."""
+        if not dated_ttps:
+            return {'start': None, 'end': None, 'duration_days': 0}
+        
+        start_dt = dated_ttps[0]['datetime']
+        end_dt = dated_ttps[-1]['datetime']
+        duration = (end_dt - start_dt).days
+        
+        return {
+            'start': start_dt.date().isoformat(),
+            'end': end_dt.date().isoformat(),
+            'duration_days': duration
+        }
         
     def _analyze_monthly_breakdown(self, dated_ttps: List[Dict]) -> Dict:
         """Analyze TTP distribution by month."""
@@ -118,9 +107,8 @@ class TimelineAnalyzer:
         })
         
         for ttp in dated_ttps:
-            # Group by year-month
-            date_obj = datetime.fromisoformat(ttp['date'])
-            month_key = f"{date_obj.year}-{date_obj.month:02d}"
+            dt = ttp['datetime']
+            month_key = f"{dt.year}-{dt.month:02d}"
             
             monthly_counts[month_key]['total'] += 1
             monthly_counts[month_key]['techniques'].add(ttp['technique_id'])
@@ -148,7 +136,7 @@ class TimelineAnalyzer:
         # Group TTPs by technique
         for ttp in dated_ttps:
             technique_timeline[ttp['technique_id']].append({
-                'date': ttp['date'],
+                'date': ttp['datetime'].date().isoformat(),
                 'source': ttp['source'],
                 'confidence': ttp.get('confidence', 0.5)
             })
@@ -163,7 +151,7 @@ class TimelineAnalyzer:
                 'last_seen': events[-1]['date'],
                 'frequency': len(events),
                 'timeline': events,
-                'activity_span_days': self._calculate_activity_span(events),
+                'activity_span_days': self._calculate_activity_span_days(events),
                 'avg_confidence': statistics.mean([e.get('confidence', 0.5) for e in events])
             }
         
@@ -176,7 +164,7 @@ class TimelineAnalyzer:
         # Group TTPs by tactic
         for ttp in dated_ttps:
             tactic_timeline[ttp['tactic']].append({
-                'date': ttp['date'],
+                'date': ttp['datetime'].date().isoformat(),
                 'technique_id': ttp['technique_id'],
                 'source': ttp['source']
             })
@@ -192,7 +180,7 @@ class TimelineAnalyzer:
                 'frequency': len(events),
                 'unique_techniques': len(set(e['technique_id'] for e in events)),
                 'techniques_used': list(set(e['technique_id'] for e in events)),
-                'activity_span_days': self._calculate_activity_span(events)
+                'activity_span_days': self._calculate_activity_span_days(events)
             }
         
         return evolution
@@ -211,12 +199,14 @@ class TimelineAnalyzer:
             techniques = [ttp['technique_id'] for ttp in window_ttps]
             tactics = [ttp['tactic'] for ttp in window_ttps]
             
+            start_dt = datetime.fromisoformat(start_date)
+            end_dt = datetime.fromisoformat(end_date)
+            
             phase = {
                 'phase_number': i + 1,
                 'start_date': start_date,
                 'end_date': end_date,
-                'duration_days': (datetime.fromisoformat(end_date) - 
-                                datetime.fromisoformat(start_date)).days,
+                'duration_days': (end_dt - start_dt).days,
                 'ttp_count': len(window_ttps),
                 'primary_techniques': self._get_top_items(techniques, 5),
                 'primary_tactics': self._get_top_items(tactics, 3),
@@ -237,8 +227,8 @@ class TimelineAnalyzer:
         })
         
         for ttp in dated_ttps:
-            date_obj = datetime.fromisoformat(ttp['date'])
-            month_key = f"{date_obj.year}-{date_obj.month:02d}"
+            dt = ttp['datetime']
+            month_key = f"{dt.year}-{dt.month:02d}"
             
             monthly_data[month_key]['count'] += 1
             monthly_data[month_key]['techniques'].add(ttp['technique_id'])
@@ -272,8 +262,8 @@ class TimelineAnalyzer:
         
         # Group by technique and month
         for ttp in dated_ttps:
-            date_obj = datetime.fromisoformat(ttp['date'])
-            month_key = f"{date_obj.year}-{date_obj.month:02d}"
+            dt = ttp['datetime']
+            month_key = f"{dt.year}-{dt.month:02d}"
             technique_usage[ttp['technique_id']].append(month_key)
         
         lifecycle_analysis = {}
@@ -299,7 +289,7 @@ class TimelineAnalyzer:
     def _analyze_activity_patterns(self, dated_ttps: List[Dict]) -> Dict:
         """Analyze patterns in threat actor activity."""
         # Time-based patterns
-        dates = [datetime.fromisoformat(ttp['date']) for ttp in dated_ttps]
+        dates = [ttp['datetime'] for ttp in dated_ttps]
         
         # Day of week patterns
         weekday_counts = Counter(date.weekday() for date in dates)
@@ -319,7 +309,7 @@ class TimelineAnalyzer:
             'most_active_month': max(month_counts, key=month_counts.get) if month_counts else None
         }
         
-    def _calculate_activity_span(self, events: List[Dict]) -> int:
+    def _calculate_activity_span_days(self, events: List[Dict]) -> int:
         """Calculate the span of activity in days."""
         if len(events) < 2:
             return 0
@@ -332,19 +322,19 @@ class TimelineAnalyzer:
         if not dated_ttps:
             return []
         
-        start_date = datetime.fromisoformat(dated_ttps[0]['date'])
-        end_date = datetime.fromisoformat(dated_ttps[-1]['date'])
+        start_dt = dated_ttps[0]['datetime']
+        end_dt = dated_ttps[-1]['datetime']
         
         windows = []
-        current_start = start_date
+        current_start = start_dt
         
-        while current_start < end_date:
-            current_end = min(current_start + timedelta(days=window_days), end_date)
+        while current_start < end_dt:
+            current_end = min(current_start + timedelta(days=window_days), end_dt)
             
             # Find TTPs in this window
             window_ttps = [
                 ttp for ttp in dated_ttps
-                if current_start <= datetime.fromisoformat(ttp['date']) < current_end
+                if current_start <= ttp['datetime'] < current_end
             ]
             
             if window_ttps:  # Only include windows with activity

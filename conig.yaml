@@ -1,5 +1,5 @@
 # TTP Analyzer Configuration File
-# Final optimized configuration for accurate results
+# Balanced configuration for good accuracy without being over-strict
 
 # Directory Configuration
 GROUPS_DIR: "groups"              # Directory containing threat actor subdirectories
@@ -16,13 +16,13 @@ LOG_LEVEL: "INFO"                 # Logging level: DEBUG, INFO, WARNING, ERROR, 
 LOG_FORMAT: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 # HTTP Request Settings
-REQUEST_TIMEOUT: 30               # Timeout for HTTP requests (seconds)
+REQUEST_TIMEOUT: 25               # Timeout for HTTP requests (seconds)
 RATE_LIMIT_DELAY: 2.0            # Delay between requests (seconds) - be polite to servers
 MAX_RETRIES: 3                    # Maximum number of retry attempts
 USER_AGENT: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
 # TTP Extraction Settings
-MIN_CONFIDENCE_THRESHOLD: 0.7     # High threshold to reduce false positives
+MIN_CONFIDENCE_THRESHOLD: 0.5     # Balanced threshold - not too strict, not too loose
 ENABLE_HEURISTIC_EXTRACTION: false # Disabled to prevent over-extraction
 MAX_REPORT_SIZE_MB: 50            # Maximum report size to process (MB)
 

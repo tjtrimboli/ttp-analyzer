@@ -1,12 +1,8 @@
 https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a
-https://www.microsoft.com/en-us/security/blog/2023/10/25/octo-tempest-crosses-boundaries-to-facilitate-extortion-encryption-and-destruction/
-https://www.crowdstrike.com/blog/scattered-spider-attempts-to-avoid-detection-with-bring-your-own-vulnerable-driver-tactic/
 https://cyble.com/threat-actor-profiles/scattered-spider/
 https://www.fsisac.com/hubfs/Knowledge/ScatteredSpider&BlackCatRansomware-MitigationGuidance.pdf
-https://www.trellix.com/blogs/research/scattered-spider-the-modus-operandi/
 https://www.guidepointsecurity.com/blog/worldwide-web-an-analysis-of-tactics-and-techniques-attributed-to-scattered-spider/
 https://www.halcyon.ai/blog/scattered-spider-tactics-observed-amid-shift-to-us-targets
 https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/
 https://cyberint.com/blog/dark-web/meet-scattered-spider-the-group-currently-scattering-uk-retail-organizations/
 https://www.vectra.ai/blog/vectra-ai-scattered-spider
-https://www.guidepointsecurity.com/blog/worldwide-web-an-analysis-of-tactics-and-techniques-attributed-to-scattered-spider/

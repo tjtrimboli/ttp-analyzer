@@ -33,17 +33,7 @@ class VisualizationEngine:
         plt.rcParams['font.size'] = 10
         
     def create_ttp_heatmap(self, ttps: List[Dict], output_path: Path, title: str = "TTP Heatmap") -> Path:
-        """
-        Create a heatmap showing TTP frequency by tactic and technique.
-        
-        Args:
-            ttps: List of extracted TTP dictionaries
-            output_path: Path to save the heatmap
-            title: Title for the chart
-            
-        Returns:
-            Path to the saved heatmap file
-        """
+        """Create a heatmap showing TTP frequency by tactic and technique."""
         self.logger.info(f"Creating TTP heatmap with {len(ttps)} TTPs")
         
         if not ttps:
@@ -59,10 +49,12 @@ class VisualizationEngine:
             technique_name = ttp.get('technique_name', technique_id)
             tactic = ttp.get('tactic', 'unknown').replace('-', ' ').title()
             
-            # Create a combined label
-            technique_label = f"{technique_id}\n{technique_name[:20]}"
-            ttp_key = (tactic, technique_label)
+            # Create a combined label (shorter for better display)
+            technique_label = f"{technique_id}"
+            if technique_name and len(technique_name) < 30:
+                technique_label += f"\n{technique_name}"
             
+            ttp_key = (tactic, technique_label)
             ttp_counts[ttp_key] += 1
             tactic_technique_map[tactic].append(technique_label)
         
@@ -73,6 +65,16 @@ class VisualizationEngine:
         tactics = sorted(set(tactic for tactic, _ in ttp_counts.keys()))
         techniques = sorted(set(technique for _, technique in ttp_counts.keys()))
         
+        # Limit techniques for better visualization
+        if len(techniques) > 30:
+            # Keep only top techniques by frequency
+            technique_totals = defaultdict(int)
+            for (tactic, technique), count in ttp_counts.items():
+                technique_totals[technique] += count
+            
+            top_techniques = sorted(technique_totals.items(), key=lambda x: x[1], reverse=True)[:30]
+            techniques = [t[0] for t in top_techniques]
+        
         # Create matrix
         matrix = np.zeros((len(techniques), len(tactics)))
         
@@ -82,7 +84,7 @@ class VisualizationEngine:
                 matrix[i, j] = count
         
         # Create the heatmap
-        fig, ax = plt.subplots(figsize=(max(12, len(tactics) * 2), max(8, len(techniques) * 0.5)))
+        fig, ax = plt.subplots(figsize=(max(12, len(tactics) * 1.5), max(8, len(techniques) * 0.4)))
         
         # Create heatmap with custom colormap
         heatmap = sns.heatmap(
@@ -104,7 +106,7 @@ class VisualizationEngine:
         
         # Rotate labels for better readability
         plt.xticks(rotation=45, ha='right')
-        plt.yticks(rotation=0)
+        plt.yticks(rotation=0, fontsize=8)
         
         # Adjust layout and save
         plt.tight_layout()
@@ -115,17 +117,7 @@ class VisualizationEngine:
         return output_path
     
     def create_timeline_chart(self, timeline_data: Dict, output_path: Path, title: str = "TTP Timeline") -> Path:
-        """
-        Create a timeline chart showing TTP evolution over time.
-        
-        Args:
-            timeline_data: Timeline analysis data
-            output_path: Path to save the chart
-            title: Title for the chart
-            
-        Returns:
-            Path to the saved chart file
-        """
+        """Create a timeline chart showing TTP evolution over time."""
         self.logger.info("Creating TTP timeline chart")
         
         monthly_data = timeline_data.get('monthly_breakdown', {})
@@ -133,32 +125,50 @@ class VisualizationEngine:
         if not monthly_data:
             return self._create_empty_chart(output_path, "No Timeline Data Available")
         
-        # Prepare data
+        # Prepare data with proper date handling
         months = sorted(monthly_data.keys())
         ttp_counts = [monthly_data[month]['total_ttps'] for month in months]
         technique_counts = [monthly_data[month]['unique_techniques'] for month in months]
         tactic_counts = [monthly_data[month]['unique_tactics'] for month in months]
         
+        # Convert month strings to datetime objects for proper plotting
+        try:
+            month_dates = []
+            for month in months:
+                year, month_num = month.split('-')
+                dt = datetime(int(year), int(month_num), 1)
+                month_dates.append(dt)
+        except (ValueError, IndexError):
+            # Fallback to using month strings as categories
+            month_dates = months
+        
         # Create the timeline chart
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 10))
         
         # Top subplot: TTP counts over time
-        ax1.plot(months, ttp_counts, marker='o', linewidth=2, markersize=6, label='Total TTPs', color='#1f77b4')
-        ax1.fill_between(months, ttp_counts, alpha=0.3, color='#1f77b4')
+        ax1.plot(month_dates, ttp_counts, marker='o', linewidth=2, markersize=6, 
+                label='Total TTPs', color='#1f77b4')
+        ax1.fill_between(month_dates, ttp_counts, alpha=0.3, color='#1f77b4')
         
         ax1.set_title(f'{title} - Activity Over Time', fontsize=14, fontweight='bold')
         ax1.set_ylabel('Number of TTPs', fontsize=12)
         ax1.grid(True, alpha=0.3)
         ax1.legend()
         
-        # Rotate x-axis labels
-        for tick in ax1.get_xticklabels():
-            tick.set_rotation(45)
+        # Format x-axis labels
+        if isinstance(month_dates[0], datetime):
+            ax1.tick_params(axis='x', rotation=45)
+            # Format dates nicely
+            import matplotlib.dates as mdates
+            ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
+        else:
+            for tick in ax1.get_xticklabels():
+                tick.set_rotation(45)
         
         # Bottom subplot: Technique and tactic diversity
-        ax2.plot(months, technique_counts, marker='s', linewidth=2, markersize=5, 
+        ax2.plot(month_dates, technique_counts, marker='s', linewidth=2, markersize=5, 
                 label='Unique Techniques', color='#ff7f0e')
-        ax2.plot(months, tactic_counts, marker='^', linewidth=2, markersize=5, 
+        ax2.plot(month_dates, tactic_counts, marker='^', linewidth=2, markersize=5, 
                 label='Unique Tactics', color='#2ca02c')
         
         ax2.set_title('TTP Diversity Over Time', fontsize=14, fontweight='bold')
@@ -167,9 +177,13 @@ class VisualizationEngine:
         ax2.grid(True, alpha=0.3)
         ax2.legend()
         
-        # Rotate x-axis labels
-        for tick in ax2.get_xticklabels():
-            tick.set_rotation(45)
+        # Format x-axis labels
+        if isinstance(month_dates[0], datetime):
+            ax2.tick_params(axis='x', rotation=45)
+            ax2.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
+        else:
+            for tick in ax2.get_xticklabels():
+                tick.set_rotation(45)
         
         plt.tight_layout()
         plt.savefig(output_path, bbox_inches='tight', dpi=300)
@@ -179,17 +193,7 @@ class VisualizationEngine:
         return output_path
     
     def create_frequency_analysis(self, ttps: List[Dict], output_path: Path, title: str = "TTP Frequency Analysis") -> Path:
-        """
-        Create frequency analysis charts for TTPs.
-        
-        Args:
-            ttps: List of extracted TTP dictionaries
-            output_path: Path to save the chart
-            title: Title for the chart
-            
-        Returns:
-            Path to the saved chart file
-        """
+        """Create frequency analysis charts for TTPs."""
         self.logger.info("Creating TTP frequency analysis")
         
         if not ttps:
@@ -211,9 +215,12 @@ class VisualizationEngine:
             techniques, counts = zip(*top_techniques)
             colors = plt.cm.Set3(np.linspace(0, 1, len(techniques)))
             
+            # Truncate long technique names
+            techniques_short = [t[:25] + '...' if len(t) > 25 else t for t in techniques]
+            
             bars1 = ax1.barh(range(len(techniques)), counts, color=colors)
             ax1.set_yticks(range(len(techniques)))
-            ax1.set_yticklabels([t[:30] + '...' if len(t) > 30 else t for t in techniques])
+            ax1.set_yticklabels(techniques_short)
             ax1.set_xlabel('Frequency')
             ax1.set_title('Top 15 Most Frequent Techniques', fontweight='bold')
             ax1.grid(axis='x', alpha=0.3)
@@ -245,18 +252,38 @@ class VisualizationEngine:
         ax3.set_title('Confidence Score Distribution', fontweight='bold')
         ax3.grid(alpha=0.3)
         
+        # Add statistics
+        avg_conf = np.mean(confidences)
+        ax3.axvline(avg_conf, color='red', linestyle='--', linewidth=2, 
+                   label=f'Average: {avg_conf:.2f}')
+        ax3.legend()
+        
         # TTP count by source
-        source_counts = Counter(ttp.get('source', 'Unknown')[:50] for ttp in ttps)  # Truncate long URLs
+        source_counts = Counter()
+        for ttp in ttps:
+            source = ttp.get('source', 'Unknown')
+            # Extract domain from URL for cleaner display
+            if 'http' in source:
+                try:
+                    from urllib.parse import urlparse
+                    parsed = urlparse(source)
+                    source = parsed.netloc or source
+                except:
+                    pass
+            source_counts[source] += 1
+        
         top_sources = source_counts.most_common(10)
         
         if top_sources:
             sources, counts = zip(*top_sources)
             colors = plt.cm.viridis(np.linspace(0, 1, len(sources)))
             
+            # Truncate long source names
+            sources_short = [s[:20] + '...' if len(s) > 20 else s for s in sources]
+            
             bars4 = ax4.bar(range(len(sources)), counts, color=colors)
             ax4.set_xticks(range(len(sources)))
-            ax4.set_xticklabels([s[:20] + '...' if len(s) > 20 else s for s in sources], 
-                               rotation=45, ha='right')
+            ax4.set_xticklabels(sources_short, rotation=45, ha='right')
             ax4.set_ylabel('Number of TTPs')
             ax4.set_title('TTPs by Source', fontweight='bold')
             ax4.grid(axis='y', alpha=0.3)
@@ -275,90 +302,6 @@ class VisualizationEngine:
         self.logger.info(f"Frequency analysis saved to: {output_path}")
         return output_path
     
-    def create_campaign_phases_chart(self, timeline_data: Dict, output_path: Path, title: str = "Campaign Phases") -> Path:
-        """
-        Create a chart showing campaign phases over time.
-        
-        Args:
-            timeline_data: Timeline analysis data containing phase information
-            output_path: Path to save the chart
-            title: Title for the chart
-            
-        Returns:
-            Path to the saved chart file
-        """
-        self.logger.info("Creating campaign phases chart")
-        
-        phases = timeline_data.get('campaign_phases', [])
-        
-        if not phases:
-            return self._create_empty_chart(output_path, "No Campaign Phases Identified")
-        
-        # Create timeline visualization
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 10))
-        
-        # Phase timeline
-        colors = plt.cm.tab10(np.linspace(0, 1, len(phases)))
-        
-        for i, phase in enumerate(phases):
-            start_date = datetime.fromisoformat(phase['start_date'])
-            end_date = datetime.fromisoformat(phase['end_date'])
-            duration = phase['duration_days']
-            
-            # Create bar for phase duration
-            ax1.barh(i, duration, left=start_date.toordinal(), 
-                    color=colors[i], alpha=0.7, height=0.6)
-            
-            # Add phase label
-            ax1.text(start_date.toordinal() + duration/2, i, 
-                    f"Phase {phase['phase_number']}\n{phase['phase_characteristics']['phase_type']}", 
-                    ha='center', va='center', fontsize=9, fontweight='bold')
-        
-        ax1.set_yticks(range(len(phases)))
-        ax1.set_yticklabels([f"Phase {p['phase_number']}" for p in phases])
-        ax1.set_xlabel('Timeline')
-        ax1.set_title(f'{title} - Phase Duration', fontweight='bold')
-        ax1.grid(axis='x', alpha=0.3)
-        
-        # Phase characteristics
-        phase_types = [p['phase_characteristics']['phase_type'] for p in phases]
-        intensities = [p['phase_characteristics']['intensity'] for p in phases]
-        complexities = [p['phase_characteristics']['complexity'] for p in phases]
-        
-        x_pos = range(len(phases))
-        width = 0.35
-        
-        bars1 = ax2.bar([x - width/2 for x in x_pos], intensities, width, 
-                       label='Intensity (# TTPs)', color='lightblue', alpha=0.7)
-        bars2 = ax2.bar([x + width/2 for x in x_pos], complexities, width, 
-                       label='Complexity (# Techniques)', color='lightcoral', alpha=0.7)
-        
-        ax2.set_xlabel('Campaign Phase')
-        ax2.set_ylabel('Count')
-        ax2.set_title('Phase Intensity and Complexity', fontweight='bold')
-        ax2.set_xticks(x_pos)
-        ax2.set_xticklabels([f"Phase {i+1}" for i in range(len(phases))])
-        ax2.legend()
-        ax2.grid(axis='y', alpha=0.3)
-        
-        # Add value labels
-        for bar in bars1:
-            height = bar.get_height()
-            ax2.text(bar.get_x() + bar.get_width()/2., height + 0.1,
-                    f'{int(height)}', ha='center', va='bottom', fontsize=9)
-        
-        for bar in bars2:
-            height = bar.get_height()
-            ax2.text(bar.get_x() + bar.get_width()/2., height + 0.1,
-                    f'{int(height)}', ha='center', va='bottom', fontsize=9)
-        
-        plt.tight_layout()
-        plt.savefig(output_path, bbox_inches='tight', dpi=300)
-        plt.close()
-        
-        self.logger.info(f"Campaign phases chart saved to: {output_path}")
-        return output_path
-    
     def _create_empty_chart(self, output_path: Path, message: str) -> Path:
         """Create an empty chart with a message when no data is available."""
         fig, ax = plt.subplots(figsize=(10, 6))
@@ -375,53 +318,4 @@ class VisualizationEngine:
         plt.savefig(output_path, bbox_inches='tight', dpi=300)
         plt.close()
         
-        return output_path
-    
-    def create_summary_dashboard(self, results: Dict, output_path: Path) -> Path:
-        """
-        Create a comprehensive summary dashboard.
-        
-        Args:
-            results: Analysis results dictionary
-            output_path: Path to save the dashboard
-            
-        Returns:
-            Path to the saved dashboard file
-        """
-        self.logger.info("Creating summary dashboard")
-        
-        fig = plt.figure(figsize=(20, 12))
-        
-        # Create a grid layout
-        gs = fig.add_gridspec(3, 4, hspace=0.3, wspace=0.3)
-        
-        # Summary statistics (top row)
-        ax1 = fig.add_subplot(gs[0, :2])
-        
-        # Key metrics
-        metrics = [
-            ('Total Reports', results.get('total_reports', 0)),
-            ('Total TTPs', results.get('total_ttps', 0)),
-            ('Unique Techniques', results.get('unique_techniques', 0)),
-            ('Date Range', f"{results.get('date_range', {}).get('start', 'N/A')} - {results.get('date_range', {}).get('end', 'N/A')}")
-        ]
-        
-        ax1.axis('off')
-        ax1.text(0.5, 0.8, f"Analysis Summary: {results.get('actor_name', 'Unknown Actor')}", 
-                transform=ax1.transAxes, fontsize=18, fontweight='bold', ha='center')
-        
-        for i, (metric, value) in enumerate(metrics):
-            ax1.text(0.1, 0.6 - i*0.15, f"{metric}:", transform=ax1.transAxes, 
-                    fontsize=12, fontweight='bold')
-            ax1.text(0.5, 0.6 - i*0.15, str(value), transform=ax1.transAxes, 
-                    fontsize=12)
-        
-        # Add timestamp
-        ax1.text(0.5, 0.05, f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", 
-                transform=ax1.transAxes, fontsize=10, ha='center', style='italic')
-        
-        plt.savefig(output_path, bbox_inches='tight', dpi=300)
-        plt.close()
-        
-        self.logger.info(f"Summary dashboard saved to: {output_path}")
         return output_path
