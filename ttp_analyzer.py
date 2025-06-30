@@ -46,6 +46,11 @@ class TTPAnalyzer:
     def setup_logging(self):
         """Configure logging for the application."""
         log_level = getattr(logging, self.config.LOG_LEVEL.upper())
+        
+        # Ensure log directory exists
+        log_file_path = Path(self.config.LOG_FILE)
+        log_file_path.parent.mkdir(parents=True, exist_ok=True)
+        
         logging.basicConfig(
             level=log_level,
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -80,10 +85,14 @@ class TTPAnalyzer:
         
         try:
             with open(reports_file, 'r', encoding='utf-8') as f:
-                for line in f:
+                for line_num, line in enumerate(f, 1):
                     line = line.strip()
                     if line and not line.startswith('#'):  # Skip empty lines and comments
-                        links.append(line)
+                        # Basic URL validation
+                        if line.startswith(('http://', 'https://')):
+                            links.append(line)
+                        else:
+                            self.logger.warning(f"Invalid URL format at line {line_num}: {line}")
         except Exception as e:
             self.logger.error(f"Error reading reports file: {e}")
             raise
@@ -105,15 +114,26 @@ class TTPAnalyzer:
             report_links = self.load_report_links(actor_dir)
             self.logger.info(f"Found {len(report_links)} reports to analyze")
             
-            # Parse reports
+            if not report_links:
+                raise ValueError("No valid report URLs found in reports.txt")
+            
+            # Parse reports with simpler error handling
             self.logger.info("Parsing reports...")
             parsed_reports = []
+            
             for i, link in enumerate(report_links, 1):
                 self.logger.info(f"Processing report {i}/{len(report_links)}: {link}")
                 try:
                     report_data = self.parser.parse_report(link)
-                    if report_data:
-                        parsed_reports.append(report_data)
+                    if report_data and report_data.get('content'):
+                        content_length = len(report_data['content'])
+                        if content_length > 50:  # Basic content check
+                            parsed_reports.append(report_data)
+                            self.logger.debug(f"Successfully parsed {content_length} characters")
+                        else:
+                            self.logger.warning(f"Report too short: {link}")
+                    else:
+                        self.logger.warning(f"No content extracted from: {link}")
                 except Exception as e:
                     self.logger.error(f"Failed to parse report {link}: {e}")
                     continue
@@ -124,11 +144,20 @@ class TTPAnalyzer:
             # Extract TTPs
             self.logger.info("Extracting TTPs from parsed reports...")
             all_ttps = []
+            
             for report in parsed_reports:
-                ttps = self.extractor.extract_ttps(report)
-                all_ttps.extend(ttps)
+                try:
+                    ttps = self.extractor.extract_ttps(report)
+                    all_ttps.extend(ttps)
+                except Exception as e:
+                    self.logger.error(f"Failed to extract TTPs from report: {e}")
+                    continue
             
             self.logger.info(f"Extracted {len(all_ttps)} TTP instances")
+            
+            if not all_ttps:
+                self.logger.warning("No TTPs were extracted from any reports")
+                return self._create_empty_results(actor_name, len(parsed_reports))
             
             # Analyze timeline
             self.logger.info("Analyzing TTP timeline...")
@@ -139,46 +168,40 @@ class TTPAnalyzer:
             output_dir = Path(self.config.OUTPUT_DIR) / actor_name
             output_dir.mkdir(parents=True, exist_ok=True)
             
-            # Create heatmap
-            heatmap_path = self.visualizer.create_ttp_heatmap(
-                all_ttps, 
-                output_dir / "ttp_heatmap.png",
-                title=f"{actor_name} TTP Heatmap"
-            )
+            # Create visualizations with error handling
+            heatmap_path = output_dir / "ttp_heatmap.png"
+            timeline_path = output_dir / "ttp_timeline.png"
+            frequency_path = output_dir / "ttp_frequency.png"
             
-            # Create timeline
-            timeline_path = self.visualizer.create_timeline_chart(
-                timeline_data,
-                output_dir / "ttp_timeline.png",
-                title=f"{actor_name} TTP Timeline"
-            )
+            try:
+                self.visualizer.create_ttp_heatmap(
+                    all_ttps, heatmap_path, title=f"{actor_name} TTP Heatmap"
+                )
+            except Exception as e:
+                self.logger.error(f"Failed to create heatmap: {e}")
             
-            # Create frequency analysis
-            frequency_path = self.visualizer.create_frequency_analysis(
-                all_ttps,
-                output_dir / "ttp_frequency.png",
-                title=f"{actor_name} TTP Frequency Analysis"
-            )
+            try:
+                self.visualizer.create_timeline_chart(
+                    timeline_data, timeline_path, title=f"{actor_name} TTP Timeline"
+                )
+            except Exception as e:
+                self.logger.error(f"Failed to create timeline: {e}")
             
-            # Save analysis results
-            timeline_data = self.timeline_analyzer.analyze_timeline(all_ttps)
+            try:
+                self.visualizer.create_frequency_analysis(
+                    all_ttps, frequency_path, title=f"{actor_name} TTP Frequency Analysis"
+                )
+            except Exception as e:
+                self.logger.error(f"Failed to create frequency analysis: {e}")
             
-            # Safely extract date range
-            date_range = timeline_data.get('date_range', {})
-            start_date = date_range.get('start')
-            end_date = date_range.get('end')
-            
+            # Build results
             results = {
                 'actor_name': actor_name,
                 'total_reports': len(parsed_reports),
                 'total_ttps': len(all_ttps),
                 'timeline_data': timeline_data,
                 'unique_techniques': len(set(ttp['technique_id'] for ttp in all_ttps)),
-                'date_range': {
-                    'start': start_date,
-                    'end': end_date,
-                    'duration_days': date_range.get('duration_days', 0)
-                },
+                'date_range': timeline_data.get('date_range', {'start': None, 'end': None, 'duration_days': 0}),
                 'visualizations': {
                     'heatmap': str(heatmap_path),
                     'timeline': str(timeline_path),
@@ -186,10 +209,13 @@ class TTPAnalyzer:
                 }
             }
             
-            # Save results to JSON
+            # Save results
             results_file = output_dir / "analysis_results.json"
-            with open(results_file, 'w', encoding='utf-8') as f:
-                json.dump(results, f, indent=2, default=str)
+            try:
+                with open(results_file, 'w', encoding='utf-8') as f:
+                    json.dump(results, f, indent=2, default=str)
+            except Exception as e:
+                self.logger.error(f"Failed to save results: {e}")
             
             self.logger.info(f"Analysis complete. Results saved to: {output_dir}")
             return results
@@ -197,6 +223,26 @@ class TTPAnalyzer:
         except Exception as e:
             self.logger.error(f"Analysis failed for {actor_name}: {e}")
             raise
+    
+    def _create_empty_results(self, actor_name: str, num_reports: int) -> Dict:
+        """Create results structure when no TTPs are found."""
+        return {
+            'actor_name': actor_name,
+            'total_reports': num_reports,
+            'total_ttps': 0,
+            'timeline_data': {
+                'total_ttps': 0,
+                'dated_ttps': 0,
+                'date_range': {'start': None, 'end': None, 'duration_days': 0}
+            },
+            'unique_techniques': 0,
+            'date_range': {'start': None, 'end': None, 'duration_days': 0},
+            'visualizations': {
+                'heatmap': 'output/ttp_heatmap.png',
+                'timeline': 'output/ttp_timeline.png',
+                'frequency': 'output/ttp_frequency.png'
+            }
+        }
             
     def list_available_actors(self) -> List[str]:
         """List all available threat actors in the groups directory."""
@@ -255,17 +301,16 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python ttp_analyzer.py --actor APT1
+  python ttp_analyzer.py --actor scattered_spider
   python ttp_analyzer.py --list-actors
   python ttp_analyzer.py --update-attack-data
-  python ttp_analyzer.py --actor scattered_spider --config custom_config.yaml
         """
     )
     
     parser.add_argument(
         '--actor', '-a',
         type=str,
-        help='Name of the threat actor to analyze (must match directory name in groups/)'
+        help='Name of the threat actor to analyze'
     )
     
     parser.add_argument(

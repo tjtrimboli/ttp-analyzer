@@ -53,11 +53,11 @@ def test_module_imports():
         if src_path.exists():
             sys.path.insert(0, str(src_path))
         
-        from config import Config
-        from report_parser import ReportParser
-        from ttp_extractor import TTPExtractor
-        from timeline_analyzer import TimelineAnalyzer
-        from visualization import VisualizationEngine
+        from src.config import Config
+        from src.report_parser import ReportParser
+        from src.ttp_extractor import TTPExtractor
+        from src.timeline_analyzer import TimelineAnalyzer
+        from src.visualization import VisualizationEngine
         
         print("✓ All TTP Analyzer modules imported successfully")
         return True
@@ -76,7 +76,7 @@ def test_configuration():
         if src_path.exists():
             sys.path.insert(0, str(src_path))
             
-        from config import Config
+        from src.config import Config
         
         # Test default configuration
         config = Config()
@@ -159,8 +159,8 @@ def test_attack_data():
         if src_path.exists():
             sys.path.insert(0, str(src_path))
             
-        from config import Config
-        from ttp_extractor import TTPExtractor
+        from src.config import Config
+        from src.ttp_extractor import TTPExtractor
         
         config = Config()
         
