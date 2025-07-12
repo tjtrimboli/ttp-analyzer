@@ -1,5 +1,6 @@
 """
-Enhanced TTP Extractor Module with improved accuracy and reduced false positives.
+Enhanced TTP Extractor Module with improved accuracy and reduced false negatives.
+This version addresses the core issues preventing accurate TTP extraction.
 """
 
 import re
@@ -16,18 +17,19 @@ class TTPExtractor:
     """Enhanced extractor for MITRE ATT&CK Tactics, Techniques, and Procedures."""
     
     def __init__(self, config):
-        """Initialize the TTP extractor."""
+        """Initialize the enhanced TTP extractor."""
         self.config = config
         self.logger = logging.getLogger(__name__)
         
         # Load MITRE ATT&CK framework data
         self.attack_data = self._load_attack_data()
         
-        # Compile regex patterns for efficient matching
+        # Compile enhanced regex patterns
         self.techniques = {}
         self.technique_id_patterns = []
         self.technique_name_patterns = []
-        self._compile_patterns()
+        self.sub_technique_patterns = []
+        self._compile_enhanced_patterns()
         
     def _load_attack_data(self) -> Dict:
         """Load MITRE ATT&CK framework data."""
@@ -45,7 +47,6 @@ class TTPExtractor:
                 return data
         except Exception as e:
             self.logger.error(f"Failed to load ATT&CK data: {e}")
-            self.logger.error("Try running: python ttp_analyzer.py --update-attack-data")
             return self._get_default_attack_data()
 
     def download_attack_data(self) -> bool:
@@ -69,18 +70,27 @@ class TTPExtractor:
             
             # Update internal data and recompile patterns
             self.attack_data = data
-            self._compile_patterns()
+            self._compile_enhanced_patterns()
             
             return True
             
         except Exception as e:
             self.logger.error(f"Failed to download ATT&CK data: {e}")
             return False
-            
+
     def _get_default_attack_data(self) -> Dict:
-        """Get default ATT&CK data with common techniques."""
+        """Get comprehensive default ATT&CK data with common techniques."""
         return {
             "objects": [
+                # Initial Access
+                {
+                    "type": "attack-pattern",
+                    "id": "attack-pattern--2b742742-28c3-4e1b-bab7-8350d6300fa7",
+                    "external_references": [{"external_id": "T1566", "source_name": "mitre-attack"}],
+                    "name": "Phishing",
+                    "description": "Adversaries may send phishing messages to gain access to victim systems.",
+                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "initial-access"}]
+                },
                 {
                     "type": "attack-pattern",
                     "id": "attack-pattern--01df3350-ce05-4bdf-bdf8-0a919a66d4a8",
@@ -90,81 +100,182 @@ class TTPExtractor:
                     "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "initial-access"}]
                 },
                 {
-                    "type": "attack-pattern", 
-                    "id": "attack-pattern--dfd7cc1d-e1d8-4394-a198-97c4cab8aa67",
-                    "external_references": [{"external_id": "T1055", "source_name": "mitre-attack"}],
-                    "name": "Process Injection",
-                    "description": "Process injection is a method of executing arbitrary code.",
-                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "privilege-escalation"}]
+                    "type": "attack-pattern",
+                    "id": "attack-pattern--b91c2e8d-8e75-4fcf-aed6-9cbd13e06acd",
+                    "external_references": [{"external_id": "T1566.002", "source_name": "mitre-attack"}],
+                    "name": "Spearphishing Link",
+                    "description": "Adversaries may send spearphishing emails with a malicious link.",
+                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "initial-access"}]
                 },
+                {
+                    "type": "attack-pattern",
+                    "id": "attack-pattern--54b4c251-1f0e-4eba-ba6b-dbc7a6f6f06b",
+                    "external_references": [{"external_id": "T1566.004", "source_name": "mitre-attack"}],
+                    "name": "Spearphishing Voice",
+                    "description": "Adversaries may use voice communications to ultimately gain access to victim systems.",
+                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "initial-access"}]
+                },
+                {
+                    "type": "attack-pattern",
+                    "id": "attack-pattern--3f886f2a-874f-4333-b794-aa6075009b1c",
+                    "external_references": [{"external_id": "T1190", "source_name": "mitre-attack"}],
+                    "name": "Exploit Public-Facing Application",
+                    "description": "Adversaries may attempt to take advantage of a weakness in an Internet-facing computer or program.",
+                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "initial-access"}]
+                },
+                
+                # Execution
                 {
                     "type": "attack-pattern",
                     "id": "attack-pattern--7bc57495-ea59-4380-be31-a64af124ef18",
                     "external_references": [{"external_id": "T1059", "source_name": "mitre-attack"}],
                     "name": "Command and Scripting Interpreter",
-                    "description": "Adversaries may abuse command and script interpreters to execute commands, scripts, or binaries.",
+                    "description": "Adversaries may abuse command and script interpreters to execute commands.",
                     "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "execution"}]
                 },
                 {
                     "type": "attack-pattern",
-                    "id": "attack-pattern--e6919abc-99f9-4c6c-95a5-14761e7b2add",
-                    "external_references": [{"external_id": "T1105", "source_name": "mitre-attack"}],
-                    "name": "Ingress Tool Transfer",
-                    "description": "Adversaries may transfer tools or other files from an external system into a compromised environment.",
-                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "command-and-control"}]
+                    "id": "attack-pattern--970a3432-3053-4124-a2d8-3c245b4d3298",
+                    "external_references": [{"external_id": "T1059.001", "source_name": "mitre-attack"}],
+                    "name": "PowerShell",
+                    "description": "Adversaries may abuse PowerShell commands and scripts for execution.",
+                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "execution"}]
+                },
+                
+                # Persistence
+                {
+                    "type": "attack-pattern",
+                    "id": "attack-pattern--b17a1a56-e99c-403c-8948-561df0cffe81",
+                    "external_references": [{"external_id": "T1078", "source_name": "mitre-attack"}],
+                    "name": "Valid Accounts",
+                    "description": "Adversaries may obtain and abuse credentials of existing accounts.",
+                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "persistence"}]
                 },
                 {
                     "type": "attack-pattern",
-                    "id": "attack-pattern--7bc57495-ea59-4380-be31-a64af124ef19",
-                    "external_references": [{"external_id": "T1083", "source_name": "mitre-attack"}],
-                    "name": "File and Directory Discovery",
-                    "description": "Adversaries may enumerate files and directories or may search in specific locations of a host or network share for certain information within a file system.",
-                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "discovery"}]
+                    "id": "attack-pattern--65f2d882-3f41-4d48-8a06-29af77ec9f90",
+                    "external_references": [{"external_id": "T1136", "source_name": "mitre-attack"}],
+                    "name": "Create Account",
+                    "description": "Adversaries may create an account to maintain access to victim systems.",
+                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "persistence"}]
+                },
+                
+                # Privilege Escalation  
+                {
+                    "type": "attack-pattern",
+                    "id": "attack-pattern--dfd7cc1d-e1d8-4394-a198-97c4cab8aa67",
+                    "external_references": [{"external_id": "T1055", "source_name": "mitre-attack"}],
+                    "name": "Process Injection",
+                    "description": "Adversaries may inject code into processes in order to evade process-based defenses.",
+                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "privilege-escalation"}]
+                },
+                
+                # Defense Evasion
+                {
+                    "type": "attack-pattern",
+                    "id": "attack-pattern--b3d682b6-98f2-4fb0-aa3b-b4df007ca70a",
+                    "external_references": [{"external_id": "T1027", "source_name": "mitre-attack"}],
+                    "name": "Obfuscated Files or Information",
+                    "description": "Adversaries may attempt to make an executable or file difficult to discover.",
+                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "defense-evasion"}]
                 },
                 {
                     "type": "attack-pattern",
                     "id": "attack-pattern--799ace7f-e227-4411-baa0-8868704f2a69",
                     "external_references": [{"external_id": "T1070", "source_name": "mitre-attack"}],
                     "name": "Indicator Removal",
-                    "description": "Adversaries may delete or alter generated artifacts on a host system, including logs or captured files such as quarantined malware.",
+                    "description": "Adversaries may delete or alter generated artifacts on a host system.",
                     "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "defense-evasion"}]
+                },
+                
+                # Credential Access
+                {
+                    "type": "attack-pattern",
+                    "id": "attack-pattern--0a3ead4e-6d47-4ccb-854c-41091bf0c72c",
+                    "external_references": [{"external_id": "T1003", "source_name": "mitre-attack"}],
+                    "name": "OS Credential Dumping",
+                    "description": "Adversaries may attempt to dump credentials to obtain account login and credential material.",
+                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "credential-access"}]
+                },
+                
+                # Discovery
+                {
+                    "type": "attack-pattern",
+                    "id": "attack-pattern--7bc57495-ea59-4380-be31-a64af124ef19",
+                    "external_references": [{"external_id": "T1083", "source_name": "mitre-attack"}],
+                    "name": "File and Directory Discovery",
+                    "description": "Adversaries may enumerate files and directories or search in specific locations.",
+                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "discovery"}]
+                },
+                
+                # Lateral Movement
+                {
+                    "type": "attack-pattern",
+                    "id": "attack-pattern--54a649ff-439a-41a4-9856-8d144a2551ba",
+                    "external_references": [{"external_id": "T1021", "source_name": "mitre-attack"}],
+                    "name": "Remote Services",
+                    "description": "Adversaries may use valid accounts to log into a service specifically designed to accept remote connections.",
+                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "lateral-movement"}]
                 },
                 {
                     "type": "attack-pattern",
-                    "id": "attack-pattern--b3d682b6-98f2-4fb0-aa3b-b4df007ca70a",
-                    "external_references": [{"external_id": "T1027", "source_name": "mitre-attack"}],
-                    "name": "Obfuscated Files or Information",
-                    "description": "Adversaries may attempt to make an executable or file difficult to discover or analyze by encrypting, encoding, or otherwise obfuscating its contents on the system or in transit.",
-                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "defense-evasion"}]
+                    "id": "attack-pattern--01327cde-66c4-4123-bf34-5f258d59457b",
+                    "external_references": [{"external_id": "T1021.001", "source_name": "mitre-attack"}],
+                    "name": "Remote Desktop Protocol",
+                    "description": "Adversaries may use Remote Desktop Protocol (RDP) to move laterally within a network.",
+                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "lateral-movement"}]
+                },
+                
+                # Command and Control
+                {
+                    "type": "attack-pattern",
+                    "id": "attack-pattern--e6919abc-99f9-4c6c-95a5-14761e7b2add",
+                    "external_references": [{"external_id": "T1105", "source_name": "mitre-attack"}],
+                    "name": "Ingress Tool Transfer",
+                    "description": "Adversaries may transfer tools or other files from an external system.",
+                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "command-and-control"}]
                 },
                 {
                     "type": "attack-pattern",
-                    "id": "attack-pattern--b17a1a56-e99c-403c-8948-561df0cffe81",
-                    "external_references": [{"external_id": "T1078", "source_name": "mitre-attack"}],
-                    "name": "Valid Accounts",
-                    "description": "Adversaries may obtain and abuse credentials of existing accounts as a means of gaining Initial Access, Persistence, Privilege Escalation, or Defense Evasion.",
-                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "defense-evasion"}]
+                    "id": "attack-pattern--bf90d72c-c00b-45e3-b3aa-68560560d4c5",
+                    "external_references": [{"external_id": "T1219", "source_name": "mitre-attack"}],
+                    "name": "Remote Access Software",
+                    "description": "Adversaries may use legitimate desktop support and remote access software.",
+                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "command-and-control"}]
                 },
+                
+                # Resource Development (newer tactics)
                 {
                     "type": "attack-pattern",
-                    "id": "attack-pattern--2b742742-28c3-4e1b-bab7-8350d6300fa7",
-                    "external_references": [{"external_id": "T1566", "source_name": "mitre-attack"}],
-                    "name": "Phishing",
-                    "description": "Adversaries may send phishing messages to gain access to victim systems.",
-                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "initial-access"}]
+                    "id": "attack-pattern--cd25c1b8-d298-4b62-9c72-d0bb1e3ef64c",
+                    "external_references": [{"external_id": "T1588.006", "source_name": "mitre-attack"}],
+                    "name": "Web Services",
+                    "description": "Adversaries may register for web services that can be used during targeting.",
+                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "resource-development"}]
+                },
+                
+                # Modify Authentication Process
+                {
+                    "type": "attack-pattern",
+                    "id": "attack-pattern--f4c1826f-a322-41cd-9557-562100848c84",
+                    "external_references": [{"external_id": "T1556.006", "source_name": "mitre-attack"}],
+                    "name": "Multi-Factor Authentication",
+                    "description": "Adversaries may disable or modify multi-factor authentication (MFA) mechanisms.",
+                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "credential-access"}]
                 }
             ]
         }
         
-    def _compile_patterns(self):
-        """Compile enhanced regex patterns for TTP extraction."""
+    def _compile_enhanced_patterns(self):
+        """Compile enhanced regex patterns for more accurate TTP extraction."""
         # Clear existing patterns
         self.techniques = {}
         self.technique_id_patterns = []
         self.technique_name_patterns = []
+        self.sub_technique_patterns = []
         
-        # Track technique names to avoid duplicates and overly generic terms
-        name_to_techniques = defaultdict(list)
+        # Track technique names for better handling
+        name_frequency = defaultdict(int)
         
         for obj in self.attack_data.get("objects", []):
             if obj.get("type") == "attack-pattern":
@@ -191,170 +302,160 @@ class TTPExtractor:
                         "tactic": tactic
                     }
                     
-                    # Create ID pattern (always high confidence)
-                    id_pattern = rf'\b{re.escape(technique_id)}\b'
-                    self.technique_id_patterns.append((id_pattern, technique_id, 'id'))
-                    
-                    # Track name for careful handling
-                    if name:
-                        name_to_techniques[name.lower()].append(technique_id)
+                    name_frequency[name.lower()] += 1
         
-        # Create enhanced name patterns with context requirements
-        for name_lower, technique_ids in name_to_techniques.items():
-            # Skip overly generic or ambiguous technique names
-            if self._is_generic_name(name_lower):
-                self.logger.debug(f"Skipping generic technique name: {name_lower}")
-                continue
+        # Create enhanced patterns
+        self._create_enhanced_id_patterns()
+        self._create_enhanced_name_patterns(name_frequency)
+        
+        self.logger.info(f"Compiled {len(self.technique_id_patterns)} enhanced ID patterns and "
+                        f"{len(self.technique_name_patterns)} enhanced name patterns")
+    
+    def _create_enhanced_id_patterns(self):
+        """Create enhanced ID patterns that handle various formats better."""
+        for technique_id in self.techniques.keys():
+            # Create multiple pattern variations for better matching
+            escaped_id = re.escape(technique_id)
             
-            if len(technique_ids) == 1:
-                # Unique name - create context-aware pattern
-                technique_id = technique_ids[0]
-                context_pattern = self._create_context_aware_pattern(name_lower)
-                if context_pattern:
-                    self.technique_name_patterns.append((context_pattern, technique_id, 'name'))
-            else:
-                # Duplicate name - skip to avoid confusion
-                self.logger.debug(f"Skipping duplicate technique name: {name_lower} -> {technique_ids}")
-        
-        self.logger.info(f"Compiled {len(self.technique_id_patterns)} ID patterns and "
-                        f"{len(self.technique_name_patterns)} context-aware name patterns")
+            # Basic ID pattern (most reliable)
+            basic_pattern = rf'\b{escaped_id}\b'
+            self.technique_id_patterns.append((basic_pattern, technique_id, 'id_basic'))
+            
+            # ID in brackets/parentheses
+            bracket_pattern = rf'[\[\(]{escaped_id}[\]\)]'
+            self.technique_id_patterns.append((bracket_pattern, technique_id, 'id_bracket'))
+            
+            # ID with spaces (sometimes happens in documents)
+            if '.' in technique_id:
+                spaced_id = technique_id.replace('.', r'\s*\.\s*')
+                spaced_pattern = rf'\b{spaced_id}\b'
+                self.technique_id_patterns.append((spaced_pattern, technique_id, 'id_spaced'))
     
-    def _is_generic_name(self, name: str) -> bool:
-        """Check if a technique name is too generic and likely to cause false positives."""
-        # Allow well-known MITRE technique names even if they contain generic words
-        known_technique_names = {
-            'process injection', 'valid accounts', 'remote services', 'web services',
-            'command and scripting interpreter', 'file and directory discovery',
-            'network discovery', 'system discovery', 'account discovery',
-            'remote access software', 'data staged', 'data collection',
-            'credential access', 'defense evasion', 'privilege escalation'
-        }
+    def _create_enhanced_name_patterns(self, name_frequency):
+        """Create enhanced name patterns with better context awareness."""
+        for technique_id, info in self.techniques.items():
+            name = info.get('name', '')
+            if not name or len(name) < 4:
+                continue
+                
+            # Skip if name appears multiple times (ambiguous)
+            if name_frequency[name.lower()] > 1:
+                self.logger.debug(f"Skipping ambiguous technique name: {name}")
+                continue
+                
+            # Apply improved filtering
+            if self._should_include_technique_name(name):
+                # Create context-aware pattern
+                pattern = self._create_enhanced_context_pattern(name)
+                if pattern:
+                    self.technique_name_patterns.append((pattern, technique_id, 'name_context'))
+    
+    def _should_include_technique_name(self, name: str) -> bool:
+        """Improved filtering that allows more legitimate MITRE technique names."""
+        name_lower = name.lower().strip()
         
-        name_lower = name.lower()
+        # Allow all technique names that are clearly legitimate MITRE techniques
+        # This is much less restrictive than the original version
         
-        # Don't filter known technique names
-        if name_lower in known_technique_names:
+        # Skip only obviously problematic cases
+        if len(name) < 4:
             return False
-        
-        # Check for overly generic single words or very common phrases
-        overly_generic = {
-            'data', 'file', 'files', 'user', 'users', 'network', 'system', 'systems',
-            'access', 'remote', 'local', 'server', 'client', 'application', 'software',
-            'tool', 'tools', 'script', 'scripts', 'command', 'commands',
-            'registry', 'library', 'api', 'protocol', 'connection', 'communication',
-            'information', 'service', 'services'
-        }
-        
+            
+        # Skip single generic words only
         words = name_lower.split()
+        if len(words) == 1:
+            # Only filter very generic single words
+            very_generic = {'data', 'file', 'user', 'access', 'network', 'system', 'tool', 'service'}
+            return words[0] not in very_generic
         
-        # Filter out single generic words
-        if len(words) == 1 and words[0] in overly_generic:
-            return True
-        
-        # Filter out very generic two-word combinations
-        if len(words) == 2:
-            # Both words are overly generic
-            if all(word in overly_generic for word in words):
-                return True
-            # Very common generic phrases
-            generic_phrases = {
-                'web service', 'data file', 'user account', 'network access',
-                'system tool', 'remote connection', 'local service'
+        # Allow most multi-word technique names - MITRE techniques often contain common words
+        # Only filter if ALL words are extremely generic
+        if len(words) >= 2:
+            extremely_generic_combinations = {
+                'data file', 'user access', 'network service', 'system tool',
+                'file access', 'data access', 'system access'
             }
-            if name_lower in generic_phrases:
-                return True
+            return name_lower not in extremely_generic_combinations
         
-        # Check for very short names (but allow some short legitimate ones)
-        if len(name) < 6:
-            return True
-        
-        return False
+        return True
     
-    def _create_context_aware_pattern(self, technique_name: str) -> Optional[str]:
-        """Create a context-aware pattern that requires MITRE ATT&CK context."""
-        # Escape the technique name for regex
+    def _create_enhanced_context_pattern(self, technique_name: str) -> Optional[str]:
+        """Create enhanced context-aware pattern for technique names."""
         escaped_name = re.escape(technique_name)
         
-        # Create more flexible pattern that requires MITRE context within reasonable distance
-        # Look for technique name near MITRE references, technique IDs, or threat intelligence context
-        context_pattern = (
-            rf'(?:'
-            # MITRE context before technique name (within 50 characters)
-            rf'(?:MITRE\s+ATT&CK|mitre\s+att&ck|ATT&CK|attack\.mitre\.org|technique|tactic|TTP).{{0,50}}?{escaped_name}'
-            rf'|'
-            # Technique name before MITRE context (within 50 characters)  
-            rf'{escaped_name}.{{0,50}}?(?:MITRE\s+ATT&CK|mitre\s+att&ck|ATT&CK|attack\.mitre\.org|technique|tactic|TTP)'
-            rf'|'
-            # Technique ID near technique name
-            rf'(?:T\d{{4}}(?:\.\d{{3}})?.{{0,30}}?{escaped_name}|{escaped_name}.{{0,30}}?T\d{{4}}(?:\.\d{{3}})?)'
-            rf'|'
-            # Technique name in brackets or parentheses (common in reports)
-            rf'(?:\[.{{0,20}}?{escaped_name}.{{0,20}}?\]|\(.{{0,20}}?{escaped_name}.{{0,20}}?\))'
-            rf'|'
-            # Threat intelligence context
-            rf'(?:adversar|attacker|threat\s+actor|malicious|campaign).{{0,50}}?{escaped_name}'
-            rf'|'
-            rf'{escaped_name}.{{0,50}}?(?:adversar|attacker|threat\s+actor|malicious|campaign)'
-            rf')'
-        )
+        # More flexible context pattern that's less restrictive
+        # Look for the technique name in various contexts that indicate MITRE references
         
-        return context_pattern
-    
-    def extract_ttps(self, report_data: Dict) -> List[Dict]:
-        """
-        Extract TTPs from a parsed report with enhanced accuracy.
-        
-        Args:
-            report_data: Parsed report data from ReportParser
+        patterns = [
+            # Explicit MITRE context (highest confidence)
+            rf'(?:MITRE\s+ATT&CK|mitre\s+att&ck|ATT&CK|attack\.mitre\.org).{{0,100}}?{escaped_name}',
+            rf'{escaped_name}.{{0,100}}?(?:MITRE\s+ATT&CK|mitre\s+att&ck|ATT&CK|attack\.mitre\.org)',
             
-        Returns:
-            List of extracted TTP dictionaries
-        """
+            # Technique ID nearby (high confidence)
+            rf'(?:T\d{{4}}(?:\.\d{{3}})?.{{0,50}}?{escaped_name}|{escaped_name}.{{0,50}}?T\d{{4}}(?:\.\d{{3}})?)',
+            
+            # In brackets or parentheses (medium confidence)
+            rf'[\[\(].{{0,30}}?{escaped_name}.{{0,30}}?[\]\)]',
+            
+            # Threat intelligence context (medium confidence)
+            rf'(?:technique|tactic|TTP|adversar|attacker|threat\s+actor|campaign|malicious).{{0,75}}?{escaped_name}',
+            rf'{escaped_name}.{{0,75}}?(?:technique|tactic|TTP|adversar|attacker|threat\s+actor|campaign|malicious)',
+            
+            # Security analysis context (lower confidence but still valid)
+            rf'(?:observed|detected|employed|used|utilized|leveraged|implements?).{{0,50}}?{escaped_name}',
+            rf'{escaped_name}.{{0,50}}?(?:was\s+observed|was\s+detected|was\s+employed|was\s+used|was\s+utilized)',
+            
+            # List or enumeration context
+            rf'(?:includes?|such\s+as|like|including).{{0,30}}?{escaped_name}',
+            rf'{escaped_name}.{{0,30}}?(?:among|and\s+other|including)',
+
+            # Execution context (lower confidence)
+            rf'(?:adversar|attacker|threat\s+actor).{{0,30}}?(?:employed|used|utilized).{{0,30}}?{escaped_name}',
+            rf'{escaped_name}.{{0,30}}?(?:execution|during).{{0,30}}?(?:campaign|purposes?)'
+        ]
+        
+        # Combine all patterns with OR
+        combined_pattern = '|'.join(f'(?:{pattern})' for pattern in patterns)
+        return f'(?:{combined_pattern})'
+
+    def extract_ttps(self, report_data: Dict) -> List[Dict]:
+        """Enhanced TTP extraction with improved accuracy."""
         content = report_data.get('content', '')
         
-        # Check if content is empty or too short
-        if not content or len(content.strip()) < 30:
-            self.logger.warning(f"Report content is empty or too short: {report_data.get('source', 'unknown')}")
+        if not content or len(content.strip()) < 20:
+            self.logger.warning(f"Report content too short: {report_data.get('source', 'unknown')}")
             return []
         
         self.logger.debug(f"Extracting TTPs from {len(content)} characters of content")
         
         extracted_ttps = []
-        matched_techniques = set()  # Avoid duplicates within this report
+        matched_techniques = set()
         
-        # Phase 1: Search for technique IDs (highest confidence)
-        id_matches = self._extract_by_technique_ids(content, report_data, matched_techniques)
+        # Phase 1: Enhanced ID extraction
+        id_matches = self._extract_enhanced_ids(content, report_data, matched_techniques)
         extracted_ttps.extend(id_matches)
         
-        # Phase 2: Search for technique names with context validation (medium confidence)
-        name_matches = self._extract_by_technique_names(content, report_data, matched_techniques)
+        # Phase 2: Enhanced name extraction  
+        name_matches = self._extract_enhanced_names(content, report_data, matched_techniques)
         extracted_ttps.extend(name_matches)
         
-        # Phase 3: Heuristic extraction (lower confidence, if enabled)
+        # Phase 3: Improved heuristic extraction
         if self.config.ENABLE_HEURISTIC_EXTRACTION:
-            heuristic_matches = self._extract_heuristic_ttps(report_data, matched_techniques)
+            heuristic_matches = self._extract_enhanced_heuristics(content, report_data, matched_techniques)
             extracted_ttps.extend(heuristic_matches)
         
-        # Filter by confidence threshold and validate
-        validated_ttps = self._validate_and_filter_ttps(extracted_ttps)
+        # Filter with improved validation
+        validated_ttps = self._enhanced_validation(extracted_ttps)
         
-        # Sort by confidence (highest first)
+        # Sort by confidence
         validated_ttps.sort(key=lambda x: x.get('confidence', 0), reverse=True)
         
         self.logger.info(f"Extracted {len(validated_ttps)} validated TTPs from report")
-        
-        if len(validated_ttps) == 0:
-            self.logger.warning(f"No TTPs extracted from: {report_data.get('source', 'unknown')}")
-            # Log a sample for debugging
-            sample = content[:300] + "..." if len(content) > 300 else content
-            self.logger.debug(f"Content sample: {sample}")
-        
         return validated_ttps
     
-    def _extract_by_technique_ids(self, content: str, report_data: Dict, matched_techniques: Set[str]) -> List[Dict]:
-        """Extract TTPs by technique IDs with high confidence."""
+    def _extract_enhanced_ids(self, content: str, report_data: Dict, matched_techniques: Set[str]) -> List[Dict]:
+        """Enhanced ID extraction with better validation."""
         ttps = []
-        content_lower = content.lower()
         
         for pattern, technique_id, match_type in self.technique_id_patterns:
             if technique_id in matched_techniques:
@@ -363,11 +464,11 @@ class TTPExtractor:
             matches = list(re.finditer(pattern, content, re.IGNORECASE))
             
             if matches:
-                # Validate that this is actually a MITRE reference
-                match = matches[0]
+                match = matches[0]  # Take first match
                 context = self._get_match_context(content, match.start(), match.end())
                 
-                if self._validate_mitre_context(context, technique_id):
+                # Less restrictive validation for IDs
+                if self._validate_id_match(context, technique_id):
                     technique_info = self.techniques.get(technique_id, {})
                     
                     ttp = {
@@ -377,26 +478,24 @@ class TTPExtractor:
                         'description': technique_info.get('description', ''),
                         'matched_text': match.group(),
                         'match_position': match.start(),
-                        'confidence': self._calculate_confidence(match.group(), technique_info, match_type, context),
+                        'confidence': self._calculate_enhanced_confidence(match.group(), technique_info, match_type, context),
                         'source': report_data.get('source', ''),
                         'report_title': report_data.get('title', ''),
                         'date': self._parse_date(report_data.get('publication_date')),
                         'extracted_at': datetime.utcnow().isoformat(),
                         'match_type': match_type,
                         'match_count': len(matches),
-                        'context': context[:100]  # Store context for validation
+                        'context': context[:100]
                     }
                     
                     ttps.append(ttp)
                     matched_techniques.add(technique_id)
-                    self.logger.debug(f"Found technique ID: {technique_id} ({match.group()}) in context: {context[:50]}...")
-                else:
-                    self.logger.debug(f"Rejected technique ID {technique_id} due to invalid context: {context[:100]}...")
+                    self.logger.debug(f"Found technique ID: {technique_id} via {match_type}")
         
         return ttps
     
-    def _extract_by_technique_names(self, content: str, report_data: Dict, matched_techniques: Set[str]) -> List[Dict]:
-        """Extract TTPs by technique names with context validation."""
+    def _extract_enhanced_names(self, content: str, report_data: Dict, matched_techniques: Set[str]) -> List[Dict]:
+        """Enhanced name extraction with improved patterns."""
         ttps = []
         
         for pattern, technique_id, match_type in self.technique_name_patterns:
@@ -407,18 +506,16 @@ class TTPExtractor:
             
             if matches:
                 match = matches[0]
-                full_match = match.group()
-                
-                # Extract just the technique name from the context match
                 technique_name = self.techniques[technique_id]['name']
-                name_match = re.search(re.escape(technique_name), full_match, re.IGNORECASE)
+                
+                # Find the actual technique name within the match
+                name_match = re.search(re.escape(technique_name), match.group(), re.IGNORECASE)
                 
                 if name_match:
-                    # Get broader context for validation
                     context = self._get_match_context(content, match.start(), match.end())
                     
-                    # Additional validation for name matches
-                    if self._validate_technique_name_match(context, technique_name, technique_id):
+                    # Since we already have context in the pattern, validation is simpler
+                    if self._validate_name_match(context, technique_name):
                         technique_info = self.techniques.get(technique_id, {})
                         
                         ttp = {
@@ -428,7 +525,7 @@ class TTPExtractor:
                             'description': technique_info.get('description', ''),
                             'matched_text': name_match.group(),
                             'match_position': match.start() + name_match.start(),
-                            'confidence': self._calculate_confidence(name_match.group(), technique_info, match_type, context),
+                            'confidence': self._calculate_enhanced_confidence(name_match.group(), technique_info, match_type, context),
                             'source': report_data.get('source', ''),
                             'report_title': report_data.get('title', ''),
                             'date': self._parse_date(report_data.get('publication_date')),
@@ -440,134 +537,62 @@ class TTPExtractor:
                         
                         ttps.append(ttp)
                         matched_techniques.add(technique_id)
-                        self.logger.debug(f"Found technique name: {technique_id} ({name_match.group()})")
+                        self.logger.debug(f"Found technique name: {technique_id} ({technique_name})")
         
         return ttps
     
-    def _get_match_context(self, content: str, start: int, end: int, window: int = 300) -> str:
-        """Get surrounding context for a match."""
-        context_start = max(0, start - window)
-        context_end = min(len(content), end + window)
-        return content[context_start:context_end]
-    
-    def _validate_mitre_context(self, context: str, technique_id: str) -> bool:
-        """Validate that a match is in proper MITRE ATT&CK context."""
-        context_lower = context.lower()
+    def _extract_enhanced_heuristics(self, content: str, report_data: Dict, matched_techniques: Set[str]) -> List[Dict]:
+        """Enhanced heuristic extraction with better patterns."""
+        ttps = []
+        content_lower = content.lower()
         
-        # Check for negative contexts that should reject the match
-        negative_indicators = [
-            'should not trigger', 'should not match', 'should not extract',
-            'not a valid', 'example of', 'for example', 'such as',
-            'should not be', 'avoid matching', 'prevent', 'exclude',
-            'false positive', 'incorrectly identified', 'mistakenly'
-        ]
-        
-        # Reject if in negative context
-        if any(indicator in context_lower for indicator in negative_indicators):
-            self.logger.debug(f"Rejecting {technique_id} due to negative context: {context_lower[:100]}")
-            return False
-        
-        # Look for MITRE/ATT&CK indicators in context
-        mitre_indicators = [
-            'mitre', 'att&ck', 'attack.mitre.org', 'technique', 'tactic', 'ttp',
-            'adversary', 'threat', 'cybersecurity', 'malware', 'ransomware'
-        ]
-        
-        # Check for technique ID patterns in context
-        technique_pattern = r'\bT\d{4}(?:\.\d{3})?\b'
-        has_technique_ids = bool(re.search(technique_pattern, context))
-        
-        # Check for MITRE indicators
-        has_mitre_context = any(indicator in context_lower for indicator in mitre_indicators)
-        
-        # Higher confidence if both conditions are met
-        return has_technique_ids or has_mitre_context
-    
-    def _validate_technique_name_match(self, context: str, technique_name: str, technique_id: str) -> bool:
-        """Additional validation for technique name matches."""
-        context_lower = context.lower()
-        
-        # Reject matches in clearly non-MITRE contexts
-        negative_indicators = [
-            'product', 'company', 'brand', 'service provider', 'vendor',
-            'advertisement', 'marketing', 'commercial', 'purchase', 'buy',
-            'about us', 'contact us', 'privacy policy', 'terms of service',
-            'should not trigger', 'should not match', 'should not extract',
-            'not a valid', 'example of', 'for example', 'such as'
-        ]
-        
-        if any(indicator in context_lower for indicator in negative_indicators):
-            self.logger.debug(f"Rejecting {technique_name} due to negative context indicators")
-            return False
-        
-        # For name matches, we already have context awareness built into the pattern,
-        # so if the pattern matched, we can be more confident it's legitimate
-        
-        # Require some form of security/threat context for name matches
-        security_indicators = [
-            'mitre', 'att&ck', 'attack.mitre.org', 'technique', 'tactic', 'ttp',
-            'adversary', 'attacker', 'threat actor', 'malicious', 'campaign',
-            'cybersecurity', 'security', 'threat', 'analysis', 'intelligence',
-            'observed', 'detected', 'employed', 'used', 'utilized', 'leveraged'
-        ]
-        
-        has_security_context = any(indicator in context_lower for indicator in security_indicators)
-        
-        # Check for technique ID near the name (additional confidence)
-        id_pattern = r'\bT\d{4}(?:\.\d{3})?\b'
-        nearby_ids = re.findall(id_pattern, context)
-        
-        # Accept if we have security context OR nearby technique IDs
-        return has_security_context or len(nearby_ids) > 0
-    
-    def _extract_heuristic_ttps(self, report_data: Dict, already_matched: Set[str]) -> List[Dict]:
-        """Extract TTPs using conservative heuristic patterns."""
-        content = report_data.get('content', '').lower()
-        heuristic_ttps = []
-        
-        # More conservative heuristic patterns with better context
+        # Improved heuristic patterns with more specific context
         heuristic_patterns = {
             'T1059': [  # Command and Scripting Interpreter
-                r'(?:adversar|attacker|threat actor).*?(?:powershell|command.?line|script)',
-                r'(?:malicious|suspicious).*?(?:powershell|cmd\.exe|script execution)',
-                r'(?:execute|run|invoke).{0,30}(?:malicious|suspicious|adversar).*?(?:command|script)'
+                r'(?:adversar|attacker|threat\s+actor|malicious).{0,50}(?:powershell|command.line|script|cmd\.exe)',
+                r'(?:execute|execution|run|invoke).{0,30}(?:malicious|suspicious).{0,30}(?:command|script|powershell)',
+                r'(?:threat\s+intelligence|security\s+analysis).{0,50}(?:command.line|script\s+execution)'
             ],
             'T1105': [  # Ingress Tool Transfer
-                r'(?:adversar|attacker).*?(?:download|upload|transfer).{0,30}(?:tool|payload|malware)',
-                r'(?:malicious|suspicious).*?(?:file transfer|tool download|payload delivery)',
-                r'(?:threat actor|adversar).*?(?:wget|curl|certutil|bitsadmin)'
+                r'(?:adversar|attacker|threat\s+actor).{0,50}(?:download|upload|transfer|deploy).{0,30}(?:tool|payload|malware|binary)',
+                r'(?:malicious|suspicious).{0,30}(?:file\s+transfer|tool\s+download|payload\s+delivery)',
+                r'(?:campaign|operation).{0,50}(?:wget|curl|certutil|bitsadmin)'
             ],
             'T1083': [  # File and Directory Discovery
-                r'(?:adversar|attacker).*?(?:enumerate|discover|search).{0,30}(?:file|director)',
-                r'(?:reconnaissance|discovery).*?(?:file system|director|folder)',
-                r'(?:threat actor|malicious).*?(?:file discovery|system reconnaissance)'
+                r'(?:adversar|attacker|threat\s+actor).{0,50}(?:enumerate|discover|search|reconnaissance).{0,30}(?:file|director|folder)',
+                r'(?:reconnaissance|discovery\s+phase).{0,50}(?:file\s+system|director|folder\s+structure)',
+                r'(?:threat\s+actor|campaign).{0,50}(?:file\s+discovery|system\s+reconnaissance)'
+            ],
+            'T1566': [  # Phishing
+                r'(?:adversar|attacker|threat\s+actor).{0,50}(?:phishing|spear.?phishing|malicious\s+email)',
+                r'(?:campaign|operation|attack).{0,50}(?:phishing\s+email|malicious\s+attachment|email\s+attack)',
+                r'(?:initial\s+access|attack\s+vector).{0,50}(?:phishing|email.based\s+attack)'
             ]
         }
         
         for technique_id, patterns in heuristic_patterns.items():
-            # Skip if already matched or technique doesn't exist
-            if technique_id in already_matched or technique_id not in self.techniques:
+            if technique_id in matched_techniques or technique_id not in self.techniques:
                 continue
             
             for pattern in patterns:
-                matches = list(re.finditer(pattern, content, re.IGNORECASE | re.DOTALL))
+                matches = list(re.finditer(pattern, content_lower, re.IGNORECASE | re.DOTALL))
                 
                 if matches:
                     match = matches[0]
-                    context = self._get_match_context(report_data.get('content', ''), match.start(), match.end())
+                    context = self._get_match_context(content, match.start(), match.end())
                     
-                    # Additional validation for heuristic matches
+                    # Validate heuristic match
                     if self._validate_heuristic_match(context, technique_id):
                         technique_info = self.techniques.get(technique_id, {})
                         
                         ttp = {
                             'technique_id': technique_id,
-                            'technique_name': technique_info.get('name', f'Technique {technique_id}'),
+                            'technique_name': technique_info.get('name', ''),
                             'tactic': technique_info.get('tactic', 'unknown'),
                             'description': technique_info.get('description', ''),
-                            'matched_text': match.group()[:50],  # Limit length
+                            'matched_text': match.group()[:50],
                             'match_position': match.start(),
-                            'confidence': 0.4,  # Lower confidence for heuristic matches
+                            'confidence': 0.35,  # Lower confidence for heuristics
                             'source': report_data.get('source', ''),
                             'report_title': report_data.get('title', ''),
                             'date': self._parse_date(report_data.get('publication_date')),
@@ -577,93 +602,123 @@ class TTPExtractor:
                             'context': context[:100]
                         }
                         
-                        heuristic_ttps.append(ttp)
-                        already_matched.add(technique_id)
+                        ttps.append(ttp)
+                        matched_techniques.add(technique_id)
                         self.logger.debug(f"Found heuristic match: {technique_id}")
-                        break  # Only match once per technique per report
+                        break
         
-        return heuristic_ttps
+        return ttps
     
-    def _validate_heuristic_match(self, context: str, technique_id: str) -> bool:
-        """Validate heuristic matches more strictly."""
+    def _validate_id_match(self, context: str, technique_id: str) -> bool:
+        """Less restrictive validation for ID matches."""
         context_lower = context.lower()
         
-        # Require threat intelligence context for heuristic matches
+        # Reject only clear negative contexts
+        negative_patterns = [
+            r'should\s+not\s+(?:trigger|match|extract|be)',
+            r'avoid\s+(?:matching|extracting)',
+            r'not\s+a\s+(?:valid|real)',
+            r'false\s+positive',
+            r'incorrectly\s+identified',
+            r'example\s+of\s+(?:what\s+)?not\s+to'
+        ]
+        
+        for pattern in negative_patterns:
+            if re.search(pattern, context_lower):
+                return False
+        
+        # For ID matches, we're less strict - if it looks like a MITRE ID, it probably is
+        return True
+    
+    def _validate_name_match(self, context: str, technique_name: str) -> bool:
+        """Validation for name matches - less restrictive than before."""
+        context_lower = context.lower()
+        
+        # Reject obvious negative contexts
+        negative_indicators = [
+            'product', 'company', 'brand', 'vendor', 'advertisement', 'marketing',
+            'about us', 'contact us', 'privacy policy', 'terms of service',
+            'should not trigger', 'should not match', 'example of what not'
+        ]
+        
+        # Only reject if clearly in wrong context
+        for indicator in negative_indicators:
+            if indicator in context_lower:
+                return False
+        
+        return True
+    
+    def _validate_heuristic_match(self, context: str, technique_id: str) -> bool:
+        """Validation for heuristic matches."""
+        context_lower = context.lower()
+        
+        # Require security/threat context for heuristic matches
         required_indicators = [
             'threat', 'adversary', 'attacker', 'malicious', 'attack', 'campaign',
-            'threat actor', 'cybersecurity', 'security', 'intrusion', 'compromise'
+            'threat actor', 'cybersecurity', 'security', 'intrusion', 'compromise',
+            'intelligence', 'analysis', 'operation', 'observed', 'detected'
         ]
         
         return any(indicator in context_lower for indicator in required_indicators)
     
-    def _validate_and_filter_ttps(self, ttps: List[Dict]) -> List[Dict]:
-        """Validate and filter TTPs to ensure quality."""
-        validated_ttps = []
-        
-        for ttp in ttps:
-            # Check confidence threshold
-            if ttp.get('confidence', 0) < self.config.MIN_CONFIDENCE_THRESHOLD:
-                continue
-            
-            # Additional validation based on match type
-            if ttp.get('match_type') == 'name':
-                # Stricter validation for name matches
-                if not self._final_name_validation(ttp):
-                    self.logger.debug(f"Rejected name match for {ttp['technique_id']}: failed final validation")
-                    continue
-            
-            validated_ttps.append(ttp)
-        
-        return validated_ttps
-    
-    def _final_name_validation(self, ttp: Dict) -> bool:
-        """Final validation for technique name matches."""
-        context = ttp.get('context', '').lower()
-        technique_name = ttp.get('technique_name', '').lower()
-        
-        # Ensure the match isn't in a clearly inappropriate context
-        inappropriate_contexts = [
-            'about us', 'contact', 'privacy', 'terms', 'legal', 'copyright',
-            'advertisement', 'sponsor', 'product description', 'service offering'
-        ]
-        
-        return not any(ctx in context for ctx in inappropriate_contexts)
-    
-    def _calculate_confidence(self, matched_text: str, technique_info: Dict, match_type: str, context: str = "") -> float:
-        """Calculate enhanced confidence score for a TTP match."""
+    def _calculate_enhanced_confidence(self, matched_text: str, technique_info: Dict, match_type: str, context: str = "") -> float:
+        """Enhanced confidence calculation with better scoring."""
         # Base confidence by match type
-        if match_type == 'id':
-            confidence = 0.9  # High confidence for ID matches
-        elif match_type == 'name':
-            confidence = 0.6  # Lower base confidence for name matches
+        if match_type.startswith('id_'):
+            confidence = 0.85  # High confidence for ID matches
+        elif match_type.startswith('name_'):
+            confidence = 0.55  # Medium confidence for name matches  
         else:  # heuristic
-            confidence = 0.4  # Lower confidence for heuristic matches
+            confidence = 0.35
         
-        # Adjust based on context quality
         context_lower = context.lower()
         
-        # Boost confidence for strong MITRE context
+        # Boost for strong MITRE context
         if any(indicator in context_lower for indicator in ['mitre', 'att&ck', 'attack.mitre.org']):
             confidence += 0.1
         
-        # Boost confidence for technique ID references in context
+        # Boost for technique IDs in context
         if re.search(r'\bT\d{4}(?:\.\d{3})?\b', context):
             confidence += 0.05
         
-        # Boost confidence for threat intelligence context
-        if any(indicator in context_lower for indicator in ['threat actor', 'adversary', 'campaign', 'ttp']):
+        # Boost for threat intelligence keywords
+        threat_keywords = ['threat actor', 'adversary', 'campaign', 'ttp', 'technique', 'tactic']
+        if any(keyword in context_lower for keyword in threat_keywords):
             confidence += 0.05
         
-        # Reduce confidence for very short matches
+        # Boost for security analysis context
+        analysis_keywords = ['observed', 'detected', 'employed', 'used', 'utilized', 'analysis', 'intelligence']
+        if any(keyword in context_lower for keyword in analysis_keywords):
+            confidence += 0.03
+        
+        # Penalty for very short matches (but less harsh)
         if len(matched_text) < 4:
-            confidence -= 0.1
+            confidence -= 0.05
         
-        # Reduce confidence for matches in potentially inappropriate contexts
-        if any(indicator in context_lower for indicator in ['advertisement', 'product', 'service']):
-            confidence -= 0.2
-        
-        # Ensure confidence is between 0 and 1
+        # Ensure confidence bounds
         return max(0.0, min(1.0, confidence))
+    
+    def _enhanced_validation(self, ttps: List[Dict]) -> List[Dict]:
+        """Enhanced validation with more lenient filtering."""
+        validated_ttps = []
+        
+        # Use a lower threshold for better recall
+        confidence_threshold = max(0.25, self.config.MIN_CONFIDENCE_THRESHOLD * 0.7)
+        
+        for ttp in ttps:
+            # Check confidence threshold
+            if ttp.get('confidence', 0) >= confidence_threshold:
+                validated_ttps.append(ttp)
+            else:
+                self.logger.debug(f"Filtered out {ttp['technique_id']} due to low confidence: {ttp.get('confidence', 0):.2f}")
+        
+        return validated_ttps
+    
+    def _get_match_context(self, content: str, start: int, end: int, window: int = 200) -> str:
+        """Get surrounding context for a match."""
+        context_start = max(0, start - window)
+        context_end = min(len(content), end + window)
+        return content[context_start:context_end]
     
     def _parse_date(self, date_str: Optional[str]) -> Optional[str]:
         """Parse date string into ISO format."""
@@ -671,10 +726,6 @@ class TTPExtractor:
             return None
         
         date_str = date_str.strip()
-        
-        # Skip obviously invalid dates
-        if re.match(r'^\d{3}-\d{1,2}-\d{1,2}$', date_str):
-            return None
         
         # Try to parse various date formats
         date_formats = [

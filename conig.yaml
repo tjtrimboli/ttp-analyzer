@@ -1,5 +1,5 @@
 # TTP Analyzer Configuration File
-# Balanced configuration for good accuracy without being over-strict
+# Optimized settings for improved TTP extraction accuracy
 
 # Directory Configuration
 GROUPS_DIR: "groups"              # Directory containing threat actor subdirectories
@@ -16,26 +16,82 @@ LOG_LEVEL: "INFO"                 # Logging level: DEBUG, INFO, WARNING, ERROR, 
 LOG_FORMAT: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 # HTTP Request Settings
-REQUEST_TIMEOUT: 25               # Timeout for HTTP requests (seconds)
-RATE_LIMIT_DELAY: 2.0            # Delay between requests (seconds) - be polite to servers
+REQUEST_TIMEOUT: 30               # Increased timeout for better reliability
+RATE_LIMIT_DELAY: 1.5            # Reasonable delay between requests
 MAX_RETRIES: 3                    # Maximum number of retry attempts
 USER_AGENT: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
-# TTP Extraction Settings
-MIN_CONFIDENCE_THRESHOLD: 0.5     # Balanced threshold - not too strict, not too loose
-ENABLE_HEURISTIC_EXTRACTION: false # Disabled to prevent over-extraction
-MAX_REPORT_SIZE_MB: 50            # Maximum report size to process (MB)
+# Enhanced TTP Extraction Settings
+MIN_CONFIDENCE_THRESHOLD: 0.3     # Lowered threshold for better recall
+ENABLE_HEURISTIC_EXTRACTION: true # Enabled for more comprehensive extraction
+MAX_REPORT_SIZE_MB: 100           # Increased limit for larger reports
+
+# Advanced Extraction Settings
+PRESERVE_TTP_CONTEXT: true        # Preserve content that might contain TTPs
+ENHANCED_NAME_MATCHING: true      # Use improved technique name matching
+STRICT_ID_VALIDATION: false       # Less restrictive ID validation
+CONTEXT_WINDOW_SIZE: 300          # Characters of context around matches
+
+# Content Processing Settings
+GENTLE_CONTENT_CLEANING: true     # Use gentler cleaning that preserves TTP context
+PRESERVE_SECURITY_URLS: true      # Keep security-related URLs
+MIN_CONTENT_LENGTH: 50            # Minimum content length to process
 
 # Visualization Settings
 FIGURE_DPI: 300                   # DPI for saved figures
-FIGURE_SIZE: [12, 8]             # Default figure size [width, height]
+FIGURE_SIZE: [14, 10]            # Larger figures for better readability
 COLOR_PALETTE: "husl"             # Color palette for visualizations
 
 # Timeline Analysis Settings
-PHASE_WINDOW_DAYS: 30             # Window size for campaign phase analysis (days)
-ACTIVITY_GAP_THRESHOLD_DAYS: 30   # Threshold for detecting activity gaps (days)
+PHASE_WINDOW_DAYS: 30             # Window size for campaign phase analysis
+ACTIVITY_GAP_THRESHOLD_DAYS: 30   # Threshold for detecting activity gaps
 
 # Performance Settings
-MAX_CONCURRENT_REQUESTS: 3        # Conservative to avoid being blocked
+MAX_CONCURRENT_REQUESTS: 2        # Conservative to avoid being blocked
 CACHE_REPORTS: true               # Enable report caching
-CACHE_DURATION_HOURS: 24          # Cache duration (hours)
+CACHE_DURATION_HOURS: 48          # Longer cache duration
+
+# Quality Control Settings
+DUPLICATE_DETECTION: true         # Enable duplicate TTP detection
+CONFIDENCE_BOOST_FACTORS:
+  mitre_context: 0.15             # Boost for explicit MITRE context
+  technique_id_nearby: 0.10       # Boost when technique IDs are nearby
+  threat_intel_context: 0.08      # Boost for threat intelligence context
+  security_analysis_context: 0.05 # Boost for security analysis context
+
+# Pattern Matching Settings
+ENHANCED_PATTERNS:
+  enable_sub_technique_patterns: true    # Better sub-technique (T1234.001) matching
+  enable_spaced_id_patterns: true        # Handle IDs with spaces
+  enable_bracket_patterns: true          # Handle IDs in brackets/parentheses
+  enable_contextual_name_patterns: true  # Context-aware name matching
+
+# Validation Settings
+VALIDATION_RULES:
+  allow_generic_names: true              # Allow technique names with common words
+  require_security_context_for_names: false  # Less strict context requirements
+  enable_negative_context_filtering: true    # Filter out obvious negative contexts
+  min_technique_name_length: 4               # Minimum length for technique names
+
+# Report Processing Settings
+HTML_PROCESSING:
+  preserve_ttp_keywords: true            # Preserve content with TTP keywords
+  selective_element_removal: true        # More careful element removal
+  enhanced_title_extraction: true        # Better title extraction
+  multiple_content_strategies: true      # Try multiple content extraction methods
+
+PDF_PROCESSING:
+  enhanced_text_extraction: true         # Better PDF text extraction
+  preserve_metadata: true                # Extract and use PDF metadata
+  handle_multi_column: true              # Better handling of complex layouts
+
+# Debug and Development Settings
+DEBUG_MODE: false                       # Enable debug output
+SAVE_INTERMEDIATE_RESULTS: false        # Save intermediate processing results
+DETAILED_LOGGING: false                 # Enable detailed operation logging
+
+# Experimental Features
+EXPERIMENTAL:
+  machine_learning_confidence: false     # ML-based confidence scoring (future)
+  semantic_context_analysis: false       # Semantic analysis of context (future)
+  multi_language_support: false          # Support for non-English reports (future)

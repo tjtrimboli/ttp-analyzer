@@ -13,7 +13,7 @@ from datetime import datetime
 import pandas as pd
 
 
-class VisualizationEngine:
+class Visualizer:
     """Engine for creating visualizations of TTP analysis results."""
     
     def __init__(self, config):

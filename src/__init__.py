@@ -11,12 +11,12 @@ from .config import Config
 from .report_parser import ReportParser
 from .ttp_extractor import TTPExtractor
 from .timeline_analyzer import TimelineAnalyzer
-from .visualization import VisualizationEngine
+from .visualization import Visualizer
 
 __all__ = [
     'Config',
     'ReportParser', 
     'TTPExtractor',
     'TimelineAnalyzer',
-    'VisualizationEngine'
+    'Visualizer'
 ]
