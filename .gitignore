@@ -132,7 +132,7 @@ dmypy.json
 output/
 logs/
 data/attack_data.json
-*.png
+*/output/*/.png
 *.pdf
 .DS_Store
 

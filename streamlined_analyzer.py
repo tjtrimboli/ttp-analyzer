@@ -132,17 +132,8 @@ class StreamlinedTTPAnalyzer:
             
             # Save results
             self._save_results(results, output_dir)
-                        
-            # Save detailed TTP data for further analysis
-            ttps_file = output_dir / "extracted_ttps.json"
-            try:
-                with open(ttps_file, 'w', encoding='utf-8') as f:
-                    json.dump(all_ttps, f, indent=2, default=str)
-                self.logger.debug(f"Detailed TTP data saved to {ttps_file}")
-            except Exception as e:
-                self.logger.error(f"Failed to save TTP data: {e}")
             
-            self.logger.info(f"Analysis complete in {processing_time:.1f}s. Results saved to: {output_dir}")
+            self.logger.info(f"Analysis complete in {processing_time:.1f}s")
             return results
             
         except Exception as e:
@@ -248,8 +239,10 @@ class StreamlinedTTPAnalyzer:
                 'dated_ttps': 0,
                 'date_range': {'start': None, 'end': None, 'duration_days': 0}
             },
+            'date_range': {'start': None, 'end': None, 'duration_days': 0},
             'confidence_stats': {'average': 0, 'min': 0, 'max': 0},
-            'processing_time_seconds': 0
+            'processing_time_seconds': 0,
+            'output_directory': None
         }
     
     def _save_results(self, results: Dict, output_dir: Path):
@@ -334,10 +327,26 @@ def main():
         print(f"Unique techniques: {results['unique_techniques']}")
         print(f"Processing time: {results['processing_time_seconds']}s")
         
-        if results['date_range']['start']:
-            print(f"Date range: {results['date_range']['start']} to {results['date_range']['end']}")
+        # Handle date range safely
+        date_range = results.get('date_range', {})
+        if date_range and date_range.get('start') and date_range.get('end'):
+            print(f"Date range: {date_range['start']} to {date_range['end']}")
+        else:
+            print("Date range: No valid dates found in reports")
         
-        print(f"Results saved to: {results.get('output_directory', 'N/A')}")
+        output_dir = results.get('output_directory')
+        if output_dir:
+            print(f"Results saved to: {output_dir}")
+        else:
+            print("No results files created (no TTPs found)")
+        
+        # Show advice for zero TTPs
+        if results['total_ttps'] == 0:
+            print("\n💡 Troubleshooting Tips:")
+            print("  • Check that reports contain explicit MITRE technique IDs (T1234, T1234.001)")
+            print("  • Verify reports.txt URLs are accessible and contain threat intelligence")
+            print("  • Consider lowering MIN_CONFIDENCE_THRESHOLD in config if too restrictive")
+            print("  • Enable verbose mode (-v) to see detailed parsing information")
         
     except KeyboardInterrupt:
         print("\nCancelled by user")

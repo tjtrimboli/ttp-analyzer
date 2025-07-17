@@ -1,102 +1,108 @@
-# TTP Analyzer Configuration File
-# Optimized settings for improved TTP extraction accuracy
+# Performance-Optimized TTP Analyzer Configuration
+# Designed for maximum speed with local MITRE data storage
 
-# Directory Configuration
-GROUPS_DIR: "groups"              # Directory containing threat actor subdirectories
-OUTPUT_DIR: "output"              # Directory for analysis outputs
-DATA_DIR: "data"                  # Directory for data files
-LOG_DIR: "logs"                   # Directory for log files
+# Directory Structure
+GROUPS_DIR: "groups"
+OUTPUT_DIR: "output"
+DATA_DIR: "data"
+LOG_DIR: "logs"
 
-# File Paths
-ATTACK_DATA_FILE: "data/attack_data.json"    # MITRE ATT&CK framework data
-LOG_FILE: "logs/ttp_analyzer.log"            # Main log file
+# Core Performance Settings
+MIN_CONFIDENCE_THRESHOLD: 0.6          # Higher threshold = fewer false positives, faster processing
+ENABLE_HEURISTIC_EXTRACTION: false     # Disable for maximum speed (regex-only)
+MAX_REPORT_SIZE_MB: 25                  # Reasonable limit to prevent memory issues
 
-# Logging Configuration
-LOG_LEVEL: "INFO"                 # Logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL
-LOG_FORMAT: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+# MITRE Data Management (LOCAL APPROACH - RECOMMENDED)
+ATTACK_DATA_FILE: "data/attack_data.json"
+AUTO_UPDATE_ENABLED: false             # Manual updates for stability
+UPDATE_THRESHOLD_DAYS: 30              # Check for updates monthly (when enabled)
 
-# HTTP Request Settings
-REQUEST_TIMEOUT: 15               # Increased timeout for better reliability
-RATE_LIMIT_DELAY: 0.5            # Reasonable delay between requests
-MAX_RETRIES: 3                    # Maximum number of retry attempts
-USER_AGENT: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+# Alternative STIX2/TAXII Settings (NOT RECOMMENDED FOR PERFORMANCE)
+# USE_STIX2: false                     # Keep false for performance
+# TAXII_SERVER: "https://cti-taxii.mitre.org/stix/"
+# STIX2_COLLECTION_ID: "95ecc380-afe9-11e4-9b6c-751b66dd541e"
 
-# Enhanced TTP Extraction Settings
-# Performance-focused settings
-MIN_CONFIDENCE_THRESHOLD: 0.5        # Higher threshold, fewer false positives
-ENABLE_HEURISTIC_EXTRACTION: false   # Disable for speed (regex only)
-MAX_REPORT_SIZE_MB: 50               # Reasonable limit
+# HTTP Request Optimization
+REQUEST_TIMEOUT: 15                     # Faster timeout
+RATE_LIMIT_DELAY: 0.5                  # Minimal delay between requests
+MAX_RETRIES: 2                          # Fewer retries for speed
+MAX_CONCURRENT_REQUESTS: 3              # Conservative for reliability
 
-# Streamlined settings
-MIN_CONTENT_LENGTH: 100              # Skip very short content
-CACHE_REPORTS: false                 # Disable caching for simplicity
+# Content Processing Optimization
+MIN_CONTENT_LENGTH: 100                 # Skip very short content quickly
+PRESERVE_TTP_CONTEXT: false             # Disable complex context preservation
+ENHANCED_NAME_MATCHING: false           # Disable for speed (ID-only matching)
+STRICT_ID_VALIDATION: false             # Less validation = faster processing
 
-# Advanced Extraction Settings
-PRESERVE_TTP_CONTEXT: true        # Preserve content that might contain TTPs
-ENHANCED_NAME_MATCHING: true      # Use improved technique name matching
-STRICT_ID_VALIDATION: false       # Less restrictive ID validation
-CONTEXT_WINDOW_SIZE: 300          # Characters of context around matches
-
-# Content Processing Settings
-GENTLE_CONTENT_CLEANING: true     # Use gentler cleaning that preserves TTP context
-PRESERVE_SECURITY_URLS: true      # Keep security-related URLs
-MIN_CONTENT_LENGTH: 100            # Minimum content length to process
+# Memory and Processing Optimization
+CACHE_REPORTS: false                    # Disable caching for simplicity
+CACHE_DURATION_HOURS: 0                 # No caching
+SAVE_INTERMEDIATE_RESULTS: false        # Skip intermediate file saves
+DETAILED_LOGGING: false                 # Reduce logging overhead
 
 # Visualization Settings
-FIGURE_DPI: 300                   # DPI for saved figures
-FIGURE_SIZE: [14, 10]            # Larger figures for better readability
-COLOR_PALETTE: "husl"             # Color palette for visualizations
+FIGURE_DPI: 150                         # Lower DPI for faster generation
+FIGURE_SIZE: [10, 6]                    # Smaller figures = faster rendering
+COLOR_PALETTE: "tab10"                  # Simpler palette
 
-# Timeline Analysis Settings
-PHASE_WINDOW_DAYS: 30             # Window size for campaign phase analysis
-ACTIVITY_GAP_THRESHOLD_DAYS: 30   # Threshold for detecting activity gaps
+# Logging Configuration
+LOG_LEVEL: "DEBUG"                 # Logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+LOG_FORMAT: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+LOG_FILE: "logs/ttp_analyzer.log"
 
-# Performance Settings
-MAX_CONCURRENT_REQUESTS: 2        # Conservative to avoid being blocked
-CACHE_REPORTS: false               # Enable report caching
-CACHE_DURATION_HOURS: 48          # Longer cache duration
+# Performance Monitoring
+ENABLE_PERFORMANCE_METRICS: true       # Track timing for optimization
+LOG_PERFORMANCE_STATS: false           # Don't log every operation
 
-# Quality Control Settings
-DUPLICATE_DETECTION: true         # Enable duplicate TTP detection
-CONFIDENCE_BOOST_FACTORS:
-  mitre_context: 0.15             # Boost for explicit MITRE context
-  technique_id_nearby: 0.10       # Boost when technique IDs are nearby
-  threat_intel_context: 0.08      # Boost for threat intelligence context
-  security_analysis_context: 0.05 # Boost for security analysis context
-
-# Pattern Matching Settings
-ENHANCED_PATTERNS:
-  enable_sub_technique_patterns: true    # Better sub-technique (T1234.001) matching
-  enable_spaced_id_patterns: true        # Handle IDs with spaces
-  enable_bracket_patterns: true          # Handle IDs in brackets/parentheses
-  enable_contextual_name_patterns: true  # Context-aware name matching
-
-# Validation Settings
-VALIDATION_RULES:
-  allow_generic_names: true              # Allow technique names with common words
-  require_security_context_for_names: false  # Less strict context requirements
-  enable_negative_context_filtering: true    # Filter out obvious negative contexts
-  min_technique_name_length: 4               # Minimum length for technique names
-
-# Report Processing Settings
-HTML_PROCESSING:
-  preserve_ttp_keywords: true            # Preserve content with TTP keywords
-  selective_element_removal: true        # More careful element removal
-  enhanced_title_extraction: true        # Better title extraction
-  multiple_content_strategies: true      # Try multiple content extraction methods
-
-PDF_PROCESSING:
-  enhanced_text_extraction: true         # Better PDF text extraction
-  preserve_metadata: true                # Extract and use PDF metadata
-  handle_multi_column: true              # Better handling of complex layouts
-
-# Debug and Development Settings
-DEBUG_MODE: false                       # Enable debug output
-SAVE_INTERMEDIATE_RESULTS: false        # Save intermediate processing results
-DETAILED_LOGGING: false                 # Enable detailed operation logging
-
-# Experimental Features
+# Feature Flags for Performance Testing
 EXPERIMENTAL:
-  machine_learning_confidence: false     # ML-based confidence scoring (future)
-  semantic_context_analysis: false       # Semantic analysis of context (future)
-  multi_language_support: false          # Support for non-English reports (future)
+  ultra_fast_mode: true                 # Enable all speed optimizations
+  skip_visualization: false             # Set true to skip chart generation
+  minimal_output: false                 # Set true for JSON-only output
+  batch_processing: false               # Set true for batch optimization
+
+# Validation Settings (Relaxed for Speed)
+VALIDATION_RULES:
+  validate_technique_ids: true          # Keep basic validation
+  validate_dates: false                 # Skip date validation
+  validate_sources: false               # Skip source validation
+  require_minimum_ttps: false           # Don't require minimum TTP count
+
+# Background Processing
+BACKGROUND_PROCESSING:
+  enabled: false                        # Disable background tasks
+  update_check_interval_hours: 24       # If enabled, check daily
+  max_background_threads: 1             # Minimal threading
+
+# Error Handling (Fast-Fail Approach)
+ERROR_HANDLING:
+  continue_on_parse_error: true         # Don't stop on individual failures
+  max_consecutive_failures: 5          # Stop after 5 consecutive failures
+  retry_failed_reports: false          # Don't retry for speed
+
+# Performance Targets (for monitoring)
+PERFORMANCE_TARGETS:
+  max_initialization_time_seconds: 1.0
+  max_report_parse_time_seconds: 2.0
+  max_ttp_extraction_time_seconds: 0.1
+  max_total_analysis_time_seconds: 60.0
+
+# Debug and Development
+DEBUG_MODE: false
+VERBOSE_TIMING: false                   # Set true only for performance debugging
+PROFILE_ENABLED: false                  # Enable for detailed profiling
+
+# STIX2/TAXII Alternative Configuration (for reference only)
+# Uncomment and modify if you decide to test STIX2 approach
+# STIX2_CONFIG:
+#   use_local_stix: true                # Use local STIX files vs TAXII server
+#   stix_data_path: "data/stix2/"
+#   enable_relationship_queries: false   # Disable complex queries for speed
+#   memory_store_cache: true            # Cache STIX memory store
+#   lazy_loading: true                  # Load STIX data on demand
+
+# Performance Comparison Notes:
+# - Local JSON: ~0.1s initialization, O(1) lookups
+# - STIX2 Local: ~1-3s initialization, ~0.01s queries  
+# - TAXII Remote: ~3-8s initialization, ~0.5-2s queries
+# - Current target: <60s total analysis time (vs 582s original)
