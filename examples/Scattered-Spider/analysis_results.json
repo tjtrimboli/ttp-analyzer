@@ -1,0 +1,1675 @@
+{
+  "actor_name": "Scattered-Spider",
+  "streamlined_mode": true,
+  "total_reports": 8,
+  "total_ttps": 124,
+  "unique_techniques": 69,
+  "unique_tactics": 14,
+  "timeline_data": {
+    "total_ttps": 124,
+    "dated_ttps": 93,
+    "date_range": {
+      "start": "2023-09-04",
+      "end": "2025-05-08",
+      "duration_days": 612
+    },
+    "monthly_breakdown": {
+      "2023-09": {
+        "total_ttps": 14,
+        "unique_techniques": 14,
+        "unique_tactics": 7,
+        "unique_reports": 1,
+        "techniques": [
+          "T1059",
+          "T1059.006",
+          "T1021",
+          "T1555",
+          "T1486",
+          "T1090",
+          "T1105",
+          "T1572",
+          "T1087",
+          "T1021.004",
+          "T1212",
+          "T1552",
+          "T1112",
+          "T1021.001"
+        ],
+        "tactics": [
+          "credential-access",
+          "discovery",
+          "execution",
+          "command-and-control",
+          "lateral-movement",
+          "defense-evasion",
+          "impact"
+        ]
+      },
+      "2023-11": {
+        "total_ttps": 35,
+        "unique_techniques": 35,
+        "unique_tactics": 13,
+        "unique_reports": 1,
+        "techniques": [
+          "T1583.001",
+          "T1566.004",
+          "T1018",
+          "T1213.002",
+          "T1552.004",
+          "T1199",
+          "T1556.006",
+          "T1657",
+          "T1567.002",
+          "T1074",
+          "T1606",
+          "T1598",
+          "T1566",
+          "T1578.002",
+          "T1589",
+          "T1585.001",
+          "T1078",
+          "T1484.002",
+          "T1136",
+          "T1648",
+          "T1078.002",
+          "T1204",
+          "T1486",
+          "T1552.001",
+          "T1530",
+          "T1621",
+          "T1217",
+          "T1114",
+          "T1656",
+          "T1539",
+          "T1083",
+          "T1213.003",
+          "T1021.007",
+          "T1219",
+          "T1538"
+        ],
+        "tactics": [
+          "credential-access",
+          "discovery",
+          "execution",
+          "command-and-control",
+          "persistence",
+          "lateral-movement",
+          "reconnaissance",
+          "initial-access",
+          "defense-evasion",
+          "resource-development",
+          "collection",
+          "exfiltration",
+          "impact"
+        ]
+      },
+      "2025-02": {
+        "total_ttps": 7,
+        "unique_techniques": 7,
+        "unique_tactics": 6,
+        "unique_reports": 1,
+        "techniques": [
+          "T1059",
+          "T1562",
+          "T1076",
+          "T1566",
+          "T1078",
+          "T1003",
+          "T1136"
+        ],
+        "tactics": [
+          "credential-access",
+          "execution",
+          "persistence",
+          "lateral-movement",
+          "defense-evasion",
+          "initial-access"
+        ]
+      },
+      "2025-05": {
+        "total_ttps": 37,
+        "unique_techniques": 36,
+        "unique_tactics": 12,
+        "unique_reports": 2,
+        "techniques": [
+          "T1134.001",
+          "T1566.004",
+          "T1018",
+          "T1213.002",
+          "T1190",
+          "T1556.006",
+          "T1059",
+          "T1133",
+          "T1074",
+          "T1567.002",
+          "T1606",
+          "T1578.002",
+          "T1566",
+          "T1213.005",
+          "T1562.001",
+          "T1484.002",
+          "T1053",
+          "T1204",
+          "T1482",
+          "T1195.002",
+          "T1490",
+          "T1486",
+          "T1552.001",
+          "T1530",
+          "T1217",
+          "T1003.001",
+          "T1114",
+          "T1539",
+          "T1656",
+          "T1083",
+          "T1106",
+          "T1021.007",
+          "T1219",
+          "T1496",
+          "T1068",
+          "T1538"
+        ],
+        "tactics": [
+          "credential-access",
+          "discovery",
+          "command-and-control",
+          "execution",
+          "persistence",
+          "lateral-movement",
+          "initial-access",
+          "defense-evasion",
+          "privilege-escalation",
+          "collection",
+          "exfiltration",
+          "impact"
+        ]
+      }
+    },
+    "technique_evolution": {
+      "T1212": {
+        "first_seen": "2023-09-04",
+        "last_seen": "2023-09-04",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2023-09-04",
+            "source": "https://www.guidepointsecurity.com/blog/worldwide-web-an-analysis-of-tactics-and-techniques-attributed-to-scattered-spider/",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1572": {
+        "first_seen": "2023-09-04",
+        "last_seen": "2023-09-04",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2023-09-04",
+            "source": "https://www.guidepointsecurity.com/blog/worldwide-web-an-analysis-of-tactics-and-techniques-attributed-to-scattered-spider/",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1090": {
+        "first_seen": "2023-09-04",
+        "last_seen": "2023-09-04",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2023-09-04",
+            "source": "https://www.guidepointsecurity.com/blog/worldwide-web-an-analysis-of-tactics-and-techniques-attributed-to-scattered-spider/",
+            "confidence": 0.8300000000000001
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.8300000000000001
+      },
+      "T1021": {
+        "first_seen": "2023-09-04",
+        "last_seen": "2023-09-04",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2023-09-04",
+            "source": "https://www.guidepointsecurity.com/blog/worldwide-web-an-analysis-of-tactics-and-techniques-attributed-to-scattered-spider/",
+            "confidence": 0.93
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.93
+      },
+      "T1021.001": {
+        "first_seen": "2023-09-04",
+        "last_seen": "2023-09-04",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2023-09-04",
+            "source": "https://www.guidepointsecurity.com/blog/worldwide-web-an-analysis-of-tactics-and-techniques-attributed-to-scattered-spider/",
+            "confidence": 0.93
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.93
+      },
+      "T1059": {
+        "first_seen": "2023-09-04",
+        "last_seen": "2025-05-08",
+        "frequency": 3,
+        "timeline": [
+          {
+            "date": "2023-09-04",
+            "source": "https://www.guidepointsecurity.com/blog/worldwide-web-an-analysis-of-tactics-and-techniques-attributed-to-scattered-spider/",
+            "confidence": 0.9
+          },
+          {
+            "date": "2025-02-20",
+            "source": "https://cyble.com/threat-actor-profiles/scattered-spider/",
+            "confidence": 0.8
+          },
+          {
+            "date": "2025-05-08",
+            "source": "https://cyberint.com/blog/dark-web/meet-scattered-spider-the-group-currently-scattering-uk-retail-organizations/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 612,
+        "avg_confidence": 0.8333333333333334
+      },
+      "T1087": {
+        "first_seen": "2023-09-04",
+        "last_seen": "2023-09-04",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2023-09-04",
+            "source": "https://www.guidepointsecurity.com/blog/worldwide-web-an-analysis-of-tactics-and-techniques-attributed-to-scattered-spider/",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1552": {
+        "first_seen": "2023-09-04",
+        "last_seen": "2023-09-04",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2023-09-04",
+            "source": "https://www.guidepointsecurity.com/blog/worldwide-web-an-analysis-of-tactics-and-techniques-attributed-to-scattered-spider/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.8
+      },
+      "T1555": {
+        "first_seen": "2023-09-04",
+        "last_seen": "2023-09-04",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2023-09-04",
+            "source": "https://www.guidepointsecurity.com/blog/worldwide-web-an-analysis-of-tactics-and-techniques-attributed-to-scattered-spider/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.8
+      },
+      "T1112": {
+        "first_seen": "2023-09-04",
+        "last_seen": "2023-09-04",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2023-09-04",
+            "source": "https://www.guidepointsecurity.com/blog/worldwide-web-an-analysis-of-tactics-and-techniques-attributed-to-scattered-spider/",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1021.004": {
+        "first_seen": "2023-09-04",
+        "last_seen": "2023-09-04",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2023-09-04",
+            "source": "https://www.guidepointsecurity.com/blog/worldwide-web-an-analysis-of-tactics-and-techniques-attributed-to-scattered-spider/",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1059.006": {
+        "first_seen": "2023-09-04",
+        "last_seen": "2023-09-04",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2023-09-04",
+            "source": "https://www.guidepointsecurity.com/blog/worldwide-web-an-analysis-of-tactics-and-techniques-attributed-to-scattered-spider/",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1105": {
+        "first_seen": "2023-09-04",
+        "last_seen": "2023-09-04",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2023-09-04",
+            "source": "https://www.guidepointsecurity.com/blog/worldwide-web-an-analysis-of-tactics-and-techniques-attributed-to-scattered-spider/",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1486": {
+        "first_seen": "2023-09-04",
+        "last_seen": "2025-05-08",
+        "frequency": 3,
+        "timeline": [
+          {
+            "date": "2023-09-04",
+            "source": "https://www.guidepointsecurity.com/blog/worldwide-web-an-analysis-of-tactics-and-techniques-attributed-to-scattered-spider/",
+            "confidence": 0.8
+          },
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8500000000000001
+          },
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 612,
+        "avg_confidence": 0.8166666666666668
+      },
+      "T1598": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2023-11-16",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.8
+      },
+      "T1656": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2025-05-08",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8
+          },
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.8300000000000001
+          }
+        ],
+        "activity_span_days": 539,
+        "avg_confidence": 0.8150000000000001
+      },
+      "T1204": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2025-05-08",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8
+          },
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 539,
+        "avg_confidence": 0.8
+      },
+      "T1219": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2025-05-08",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8
+          },
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 539,
+        "avg_confidence": 0.8
+      },
+      "T1566": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2025-05-08",
+        "frequency": 3,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8
+          },
+          {
+            "date": "2025-02-20",
+            "source": "https://cyble.com/threat-actor-profiles/scattered-spider/",
+            "confidence": 0.9
+          },
+          {
+            "date": "2025-05-08",
+            "source": "https://cyberint.com/blog/dark-web/meet-scattered-spider-the-group-currently-scattering-uk-retail-organizations/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 539,
+        "avg_confidence": 0.8333333333333334
+      },
+      "T1621": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2023-11-16",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.8
+      },
+      "T1657": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2023-11-16",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8800000000000001
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.8800000000000001
+      },
+      "T1217": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2025-05-08",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8
+          },
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 539,
+        "avg_confidence": 0.8500000000000001
+      },
+      "T1539": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2025-05-08",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8
+          },
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 539,
+        "avg_confidence": 0.8500000000000001
+      },
+      "T1567.002": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2025-05-08",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8
+          },
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 539,
+        "avg_confidence": 0.8
+      },
+      "T1583.001": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2023-11-16",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8800000000000001
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.8800000000000001
+      },
+      "T1589": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2023-11-16",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.9500000000000001
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9500000000000001
+      },
+      "T1078.002": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2023-11-16",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1199": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2023-11-16",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.8
+      },
+      "T1566.004": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2025-05-08",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8
+          },
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.8300000000000001
+          }
+        ],
+        "activity_span_days": 539,
+        "avg_confidence": 0.8150000000000001
+      },
+      "T1556.006": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2025-05-08",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8500000000000001
+          },
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 539,
+        "avg_confidence": 0.875
+      },
+      "T1606": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2025-05-08",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8500000000000001
+          },
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 539,
+        "avg_confidence": 0.875
+      },
+      "T1484.002": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2025-05-08",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8500000000000001
+          },
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.8500000000000001
+          }
+        ],
+        "activity_span_days": 539,
+        "avg_confidence": 0.8500000000000001
+      },
+      "T1078": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2025-02-20",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8
+          },
+          {
+            "date": "2025-02-20",
+            "source": "https://cyble.com/threat-actor-profiles/scattered-spider/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 462,
+        "avg_confidence": 0.8
+      },
+      "T1213.002": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2025-05-08",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8500000000000001
+          },
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 539,
+        "avg_confidence": 0.8250000000000001
+      },
+      "T1552.001": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2025-05-08",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8
+          },
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 539,
+        "avg_confidence": 0.8
+      },
+      "T1018": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2025-05-08",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8
+          },
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.8300000000000001
+          }
+        ],
+        "activity_span_days": 539,
+        "avg_confidence": 0.8150000000000001
+      },
+      "T1213.003": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2023-11-16",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8500000000000001
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.8500000000000001
+      },
+      "T1552.004": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2023-11-16",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8500000000000001
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.8500000000000001
+      },
+      "T1083": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2025-05-08",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8500000000000001
+          },
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 539,
+        "avg_confidence": 0.8250000000000001
+      },
+      "T1538": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2025-05-08",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8500000000000001
+          },
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.8500000000000001
+          }
+        ],
+        "activity_span_days": 539,
+        "avg_confidence": 0.8500000000000001
+      },
+      "T1021.007": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2025-05-08",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8
+          },
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.8500000000000001
+          }
+        ],
+        "activity_span_days": 539,
+        "avg_confidence": 0.8250000000000001
+      },
+      "T1578.002": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2025-05-08",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8
+          },
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.8500000000000001
+          }
+        ],
+        "activity_span_days": 539,
+        "avg_confidence": 0.8250000000000001
+      },
+      "T1648": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2023-11-16",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8500000000000001
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.8500000000000001
+      },
+      "T1074": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2025-05-08",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8
+          },
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 539,
+        "avg_confidence": 0.8
+      },
+      "T1530": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2025-05-08",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8
+          },
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 539,
+        "avg_confidence": 0.8
+      },
+      "T1114": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2025-05-08",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8500000000000001
+          },
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 539,
+        "avg_confidence": 0.8250000000000001
+      },
+      "T1136": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2025-02-20",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.8
+          },
+          {
+            "date": "2025-02-20",
+            "source": "https://cyble.com/threat-actor-profiles/scattered-spider/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 462,
+        "avg_confidence": 0.8
+      },
+      "T1585.001": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2023-11-16",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2023-11-16",
+            "source": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1562": {
+        "first_seen": "2025-02-20",
+        "last_seen": "2025-02-20",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-02-20",
+            "source": "https://cyble.com/threat-actor-profiles/scattered-spider/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.8
+      },
+      "T1003": {
+        "first_seen": "2025-02-20",
+        "last_seen": "2025-02-20",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-02-20",
+            "source": "https://cyble.com/threat-actor-profiles/scattered-spider/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.8
+      },
+      "T1076": {
+        "first_seen": "2025-02-20",
+        "last_seen": "2025-02-20",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-02-20",
+            "source": "https://cyble.com/threat-actor-profiles/scattered-spider/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.8
+      },
+      "T1562.001": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-05-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.8
+      },
+      "T1003.001": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-05-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.8
+      },
+      "T1068": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-05-08",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.8500000000000001
+          },
+          {
+            "date": "2025-05-08",
+            "source": "https://cyberint.com/blog/dark-web/meet-scattered-spider-the-group-currently-scattering-uk-retail-organizations/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.8250000000000001
+      },
+      "T1490": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-05-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.8
+      },
+      "T1482": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-05-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.8300000000000001
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.8300000000000001
+      },
+      "T1213.005": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-05-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.8
+      },
+      "T1496": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-05-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://cyberint.com/blog/dark-web/meet-scattered-spider-the-group-currently-scattering-uk-retail-organizations/",
+            "confidence": 0.9500000000000001
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9500000000000001
+      },
+      "T1134.001": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-05-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://cyberint.com/blog/dark-web/meet-scattered-spider-the-group-currently-scattering-uk-retail-organizations/",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1053": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-05-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://cyberint.com/blog/dark-web/meet-scattered-spider-the-group-currently-scattering-uk-retail-organizations/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.8
+      },
+      "T1106": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-05-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://cyberint.com/blog/dark-web/meet-scattered-spider-the-group-currently-scattering-uk-retail-organizations/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.8
+      },
+      "T1195.002": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-05-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://cyberint.com/blog/dark-web/meet-scattered-spider-the-group-currently-scattering-uk-retail-organizations/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.8
+      },
+      "T1190": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-05-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://cyberint.com/blog/dark-web/meet-scattered-spider-the-group-currently-scattering-uk-retail-organizations/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.8
+      },
+      "T1133": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-05-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://cyberint.com/blog/dark-web/meet-scattered-spider-the-group-currently-scattering-uk-retail-organizations/",
+            "confidence": 0.8
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.8
+      }
+    },
+    "tactic_evolution": {
+      "credential-access": {
+        "first_seen": "2023-09-04",
+        "last_seen": "2025-05-08",
+        "frequency": 15,
+        "unique_techniques": 11,
+        "techniques_used": [
+          "T1555",
+          "T1606",
+          "T1552.001",
+          "T1621",
+          "T1003.001",
+          "T1539",
+          "T1552.004",
+          "T1003",
+          "T1212",
+          "T1552",
+          "T1556.006"
+        ],
+        "activity_span_days": 612
+      },
+      "command-and-control": {
+        "first_seen": "2023-09-04",
+        "last_seen": "2025-05-08",
+        "frequency": 5,
+        "unique_techniques": 4,
+        "techniques_used": [
+          "T1090",
+          "T1572",
+          "T1105",
+          "T1219"
+        ],
+        "activity_span_days": 612
+      },
+      "lateral-movement": {
+        "first_seen": "2023-09-04",
+        "last_seen": "2025-05-08",
+        "frequency": 6,
+        "unique_techniques": 5,
+        "techniques_used": [
+          "T1076",
+          "T1021",
+          "T1021.007",
+          "T1021.004",
+          "T1021.001"
+        ],
+        "activity_span_days": 612
+      },
+      "execution": {
+        "first_seen": "2023-09-04",
+        "last_seen": "2025-05-08",
+        "frequency": 9,
+        "unique_techniques": 6,
+        "techniques_used": [
+          "T1059",
+          "T1059.006",
+          "T1204",
+          "T1106",
+          "T1648",
+          "T1053"
+        ],
+        "activity_span_days": 612
+      },
+      "discovery": {
+        "first_seen": "2023-09-04",
+        "last_seen": "2025-05-08",
+        "frequency": 10,
+        "unique_techniques": 6,
+        "techniques_used": [
+          "T1217",
+          "T1018",
+          "T1087",
+          "T1083",
+          "T1482",
+          "T1538"
+        ],
+        "activity_span_days": 612
+      },
+      "defense-evasion": {
+        "first_seen": "2023-09-04",
+        "last_seen": "2025-05-08",
+        "frequency": 13,
+        "unique_techniques": 9,
+        "techniques_used": [
+          "T1562",
+          "T1078.002",
+          "T1134.001",
+          "T1578.002",
+          "T1656",
+          "T1562.001",
+          "T1078",
+          "T1484.002",
+          "T1112"
+        ],
+        "activity_span_days": 612
+      },
+      "impact": {
+        "first_seen": "2023-09-04",
+        "last_seen": "2025-05-08",
+        "frequency": 6,
+        "unique_techniques": 4,
+        "techniques_used": [
+          "T1657",
+          "T1490",
+          "T1496",
+          "T1486"
+        ],
+        "activity_span_days": 612
+      },
+      "reconnaissance": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2023-11-16",
+        "frequency": 2,
+        "unique_techniques": 2,
+        "techniques_used": [
+          "T1598",
+          "T1589"
+        ],
+        "activity_span_days": 0
+      },
+      "initial-access": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2025-05-08",
+        "frequency": 8,
+        "unique_techniques": 5,
+        "techniques_used": [
+          "T1566",
+          "T1566.004",
+          "T1195.002",
+          "T1190",
+          "T1199"
+        ],
+        "activity_span_days": 539
+      },
+      "exfiltration": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2025-05-08",
+        "frequency": 2,
+        "unique_techniques": 1,
+        "techniques_used": [
+          "T1567.002"
+        ],
+        "activity_span_days": 539
+      },
+      "resource-development": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2023-11-16",
+        "frequency": 2,
+        "unique_techniques": 2,
+        "techniques_used": [
+          "T1583.001",
+          "T1585.001"
+        ],
+        "activity_span_days": 0
+      },
+      "collection": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2025-05-08",
+        "frequency": 10,
+        "unique_techniques": 6,
+        "techniques_used": [
+          "T1530",
+          "T1213.005",
+          "T1114",
+          "T1213.002",
+          "T1213.003",
+          "T1074"
+        ],
+        "activity_span_days": 539
+      },
+      "persistence": {
+        "first_seen": "2023-11-16",
+        "last_seen": "2025-05-08",
+        "frequency": 3,
+        "unique_techniques": 2,
+        "techniques_used": [
+          "T1133",
+          "T1136"
+        ],
+        "activity_span_days": 539
+      },
+      "privilege-escalation": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-05-08",
+        "frequency": 2,
+        "unique_techniques": 1,
+        "techniques_used": [
+          "T1068"
+        ],
+        "activity_span_days": 0
+      }
+    },
+    "campaign_phases": [
+      {
+        "phase_number": 1,
+        "start_date": "2023-09-04",
+        "end_date": "2023-10-04",
+        "duration_days": 30,
+        "ttp_count": 14,
+        "primary_techniques": [
+          {
+            "item": "T1212",
+            "count": 1
+          },
+          {
+            "item": "T1572",
+            "count": 1
+          },
+          {
+            "item": "T1090",
+            "count": 1
+          },
+          {
+            "item": "T1021",
+            "count": 1
+          },
+          {
+            "item": "T1021.001",
+            "count": 1
+          }
+        ],
+        "primary_tactics": [
+          {
+            "item": "credential-access",
+            "count": 3
+          },
+          {
+            "item": "command-and-control",
+            "count": 3
+          },
+          {
+            "item": "lateral-movement",
+            "count": 3
+          }
+        ],
+        "phase_characteristics": {
+          "phase_type": "mixed_activity",
+          "intensity": 14,
+          "complexity": 14,
+          "dominant_tactic": "credential-access"
+        }
+      },
+      {
+        "phase_number": 2,
+        "start_date": "2023-11-03",
+        "end_date": "2023-12-03",
+        "duration_days": 30,
+        "ttp_count": 35,
+        "primary_techniques": [
+          {
+            "item": "T1598",
+            "count": 1
+          },
+          {
+            "item": "T1656",
+            "count": 1
+          },
+          {
+            "item": "T1204",
+            "count": 1
+          },
+          {
+            "item": "T1219",
+            "count": 1
+          },
+          {
+            "item": "T1566",
+            "count": 1
+          }
+        ],
+        "primary_tactics": [
+          {
+            "item": "credential-access",
+            "count": 6
+          },
+          {
+            "item": "defense-evasion",
+            "count": 5
+          },
+          {
+            "item": "collection",
+            "count": 5
+          }
+        ],
+        "phase_characteristics": {
+          "phase_type": "mixed_activity",
+          "intensity": 35,
+          "complexity": 35,
+          "dominant_tactic": "credential-access"
+        }
+      },
+      {
+        "phase_number": 3,
+        "start_date": "2025-01-26",
+        "end_date": "2025-02-25",
+        "duration_days": 30,
+        "ttp_count": 7,
+        "primary_techniques": [
+          {
+            "item": "T1566",
+            "count": 1
+          },
+          {
+            "item": "T1078",
+            "count": 1
+          },
+          {
+            "item": "T1059",
+            "count": 1
+          },
+          {
+            "item": "T1136",
+            "count": 1
+          },
+          {
+            "item": "T1562",
+            "count": 1
+          }
+        ],
+        "primary_tactics": [
+          {
+            "item": "defense-evasion",
+            "count": 2
+          },
+          {
+            "item": "initial-access",
+            "count": 1
+          },
+          {
+            "item": "execution",
+            "count": 1
+          }
+        ],
+        "phase_characteristics": {
+          "phase_type": "mixed_activity",
+          "intensity": 7,
+          "complexity": 7,
+          "dominant_tactic": "defense-evasion"
+        }
+      }
+    ],
+    "trend_analysis": {
+      "activity_trend": "increasing",
+      "technique_diversity_trend": "increasing",
+      "tactic_diversity_trend": "increasing",
+      "peak_activity_month": "2025-05",
+      "activity_volatility": 15.01943185787443
+    },
+    "technique_lifecycle": {
+      "T1059": {
+        "introduction_phase": [
+          "2023-09"
+        ],
+        "peak_month": "2023-09",
+        "peak_usage": 1,
+        "decline_phase": [
+          "2025-02",
+          "2025-05"
+        ],
+        "lifecycle_stage": "declining"
+      },
+      "T1486": {
+        "introduction_phase": [
+          "2023-09"
+        ],
+        "peak_month": "2023-09",
+        "peak_usage": 1,
+        "decline_phase": [
+          "2023-11",
+          "2025-05"
+        ],
+        "lifecycle_stage": "declining"
+      },
+      "T1566": {
+        "introduction_phase": [
+          "2023-11"
+        ],
+        "peak_month": "2023-11",
+        "peak_usage": 1,
+        "decline_phase": [
+          "2025-02",
+          "2025-05"
+        ],
+        "lifecycle_stage": "declining"
+      }
+    },
+    "activity_patterns": {
+      "weekday_distribution": {
+        "Monday": 14,
+        "Tuesday": 0,
+        "Wednesday": 0,
+        "Thursday": 79,
+        "Friday": 0,
+        "Saturday": 0,
+        "Sunday": 0
+      },
+      "month_distribution": {
+        "Month_1": 0,
+        "Month_2": 7,
+        "Month_3": 0,
+        "Month_4": 0,
+        "Month_5": 37,
+        "Month_6": 0,
+        "Month_7": 0,
+        "Month_8": 0,
+        "Month_9": 14,
+        "Month_10": 0,
+        "Month_11": 35,
+        "Month_12": 0
+      },
+      "activity_gaps": [
+        {
+          "start_date": "2023-09-04",
+          "end_date": "2023-11-16",
+          "gap_days": 73
+        },
+        {
+          "start_date": "2023-11-16",
+          "end_date": "2025-02-20",
+          "gap_days": 462
+        },
+        {
+          "start_date": "2025-02-20",
+          "end_date": "2025-05-08",
+          "gap_days": 77
+        }
+      ],
+      "most_active_weekday": "Thursday",
+      "most_active_month": 5
+    }
+  },
+  "date_range": {
+    "start": "2023-09-04",
+    "end": "2025-05-08",
+    "duration_days": 612
+  },
+  "confidence_stats": {
+    "average": 0.837,
+    "min": 0.8,
+    "max": 0.95
+  },
+  "processing_time_seconds": 15.43,
+  "output_directory": "output/Scattered-Spider",
+  "analysis_timestamp": 1752772566.501003
+}

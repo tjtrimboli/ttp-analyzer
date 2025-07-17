@@ -1,5 +1,6 @@
 """
-Configuration Management Module for TTP Analyzer.
+Fixed Configuration Management Module for TTP Analyzer.
+Proper precedence order: YAML file > Environment variables > Python defaults
 """
 
 import os
@@ -10,13 +11,34 @@ from typing import Dict, Any, Optional
 
 
 class Config:
-    """Configuration manager for TTP Analyzer application."""
+    """Configuration manager with proper precedence handling."""
     
     def __init__(self, config_path: Optional[str] = None):
-        """Initialize configuration with default values and load from file if provided."""
+        """Initialize configuration with proper loading order."""
         
-        # Default configuration
-        self.defaults = {
+        # Step 1: Start with Python defaults (lowest priority)
+        self.config = self._get_python_defaults()
+        
+        # Step 2: Load from YAML file (higher priority)
+        yaml_config = self._load_yaml_config(config_path)
+        if yaml_config:
+            self.config.update(yaml_config)
+            print(f"✅ Loaded configuration from YAML file")
+        else:
+            print("⚠️  No YAML config found, using defaults")
+        
+        # Step 3: Override with environment variables (highest priority)
+        self._load_from_environment()
+        
+        # Step 4: Create required directories
+        self._create_directories()
+        
+        # Debug: Show final log level
+        print(f"🔧 Final LOG_LEVEL: {self.config.get('LOG_LEVEL')}")
+        
+    def _get_python_defaults(self) -> Dict[str, Any]:
+        """Get default configuration values from Python."""
+        return {
             # Directories
             'GROUPS_DIR': 'groups',
             'OUTPUT_DIR': 'output',
@@ -27,8 +49,8 @@ class Config:
             'ATTACK_DATA_FILE': 'data/attack_data.json',
             'LOG_FILE': 'logs/ttp_analyzer.log',
             
-            # Logging
-            'LOG_LEVEL': 'INFO',
+            # Logging (these should be overridden by YAML)
+            'LOG_LEVEL': 'INFO',  # Default - should be overridden by YAML
             'LOG_FORMAT': '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
             
             # HTTP Settings
@@ -56,42 +78,58 @@ class Config:
             'CACHE_REPORTS': True,
             'CACHE_DURATION_HOURS': 24
         }
+    
+    def _load_yaml_config(self, config_path: Optional[str] = None) -> Optional[Dict]:
+        """Load configuration from YAML file with proper precedence."""
         
-        # Load configuration from file if provided
+        # Determine config file path
         if config_path:
-            self.load_from_file(config_path)
+            config_file = Path(config_path)
         else:
-            # Look for default config files
-            default_configs = ['config.yaml', 'config.yml', 'ttp_config.yaml']
-            for config_file in default_configs:
-                if Path(config_file).exists():
-                    self.load_from_file(config_file)
+            # Look for config files in order of preference
+            possible_configs = [
+                Path('config.yaml'),          # Project root (preferred)
+                Path('config.yml'),           # Alternative extension
+                Path('ttp_config.yaml'),      # Alternative name
+                Path('src/config.yaml')       # Fallback location
+            ]
+            
+            config_file = None
+            for candidate in possible_configs:
+                if candidate.exists():
+                    config_file = candidate
                     break
         
-        # Override with environment variables
-        self.load_from_environment()
+        if not config_file or not config_file.exists():
+            print(f"ℹ️  No YAML config file found (looked for: {[str(p) for p in possible_configs if not config_path]})")
+            return None
         
-        # Ensure required directories exist
-        self.create_directories()
-        
-    def load_from_file(self, config_path: str):
-        """Load configuration from YAML file."""
         try:
-            config_file = Path(config_path)
-            if not config_file.exists():
-                raise FileNotFoundError(f"Config file not found: {config_path}")
+            print(f"📄 Loading config from: {config_file}")
             
             with open(config_file, 'r', encoding='utf-8') as f:
-                file_config = yaml.safe_load(f)
-                
-            if file_config:
-                self.defaults.update(file_config)
-                
-        except Exception as e:
-            logging.warning(f"Failed to load config from {config_path}: {e}")
+                yaml_config = yaml.safe_load(f)
             
-    def load_from_environment(self):
-        """Load configuration from environment variables."""
+            if yaml_config:
+                # Debug: Show what was loaded
+                if 'LOG_LEVEL' in yaml_config:
+                    print(f"📄 YAML LOG_LEVEL: {yaml_config['LOG_LEVEL']}")
+                
+                print(f"✅ Loaded {len(yaml_config)} settings from YAML")
+                return yaml_config
+            else:
+                print(f"⚠️  YAML file is empty: {config_file}")
+                return None
+                
+        except yaml.YAMLError as e:
+            print(f"❌ YAML parsing error in {config_file}: {e}")
+            return None
+        except Exception as e:
+            print(f"❌ Failed to load config from {config_file}: {e}")
+            return None
+    
+    def _load_from_environment(self):
+        """Load configuration from environment variables (highest priority)."""
         env_mapping = {
             'TTP_GROUPS_DIR': 'GROUPS_DIR',
             'TTP_OUTPUT_DIR': 'OUTPUT_DIR',
@@ -112,6 +150,8 @@ class Config:
             'TTP_CACHE_DURATION': 'CACHE_DURATION_HOURS'
         }
         
+        env_overrides = 0
+        
         for env_var, config_key in env_mapping.items():
             value = os.getenv(env_var)
             if value is not None:
@@ -120,52 +160,61 @@ class Config:
                                  'FIGURE_DPI', 'PHASE_WINDOW_DAYS', 'ACTIVITY_GAP_THRESHOLD_DAYS',
                                  'MAX_CONCURRENT_REQUESTS', 'CACHE_DURATION_HOURS']:
                     try:
-                        self.defaults[config_key] = int(value)
+                        self.config[config_key] = int(value)
+                        env_overrides += 1
                     except ValueError:
-                        logging.warning(f"Invalid integer value for {env_var}: {value}")
+                        print(f"⚠️  Invalid integer value for {env_var}: {value}")
                 elif config_key in ['RATE_LIMIT_DELAY', 'MIN_CONFIDENCE_THRESHOLD']:
                     try:
-                        self.defaults[config_key] = float(value)
+                        self.config[config_key] = float(value)
+                        env_overrides += 1
                     except ValueError:
-                        logging.warning(f"Invalid float value for {env_var}: {value}")
+                        print(f"⚠️  Invalid float value for {env_var}: {value}")
                 elif config_key in ['ENABLE_HEURISTIC_EXTRACTION', 'CACHE_REPORTS']:
-                    self.defaults[config_key] = value.lower() in ('true', '1', 'yes', 'on')
+                    self.config[config_key] = value.lower() in ('true', '1', 'yes', 'on')
+                    env_overrides += 1
                 else:
-                    self.defaults[config_key] = value
+                    self.config[config_key] = value
+                    env_overrides += 1
                     
-    def create_directories(self):
+                print(f"🌍 Environment override: {config_key} = {self.config[config_key]}")
+        
+        if env_overrides > 0:
+            print(f"✅ Applied {env_overrides} environment variable overrides")
+    
+    def _create_directories(self):
         """Create required directories if they don't exist."""
         directories = [
-            self.GROUPS_DIR,
-            self.OUTPUT_DIR,
-            self.DATA_DIR,
-            self.LOG_DIR
+            self.config['GROUPS_DIR'],
+            self.config['OUTPUT_DIR'],
+            self.config['DATA_DIR'],
+            self.config['LOG_DIR']
         ]
         
         for directory in directories:
             Path(directory).mkdir(parents=True, exist_ok=True)
-            
+    
     def __getattr__(self, name: str) -> Any:
         """Get configuration value by attribute name."""
-        if name in self.defaults:
-            return self.defaults[name]
+        if name in self.config:
+            return self.config[name]
         raise AttributeError(f"Configuration key '{name}' not found")
         
     def get(self, key: str, default: Any = None) -> Any:
         """Get configuration value with optional default."""
-        return self.defaults.get(key, default)
+        return self.config.get(key, default)
         
     def set(self, key: str, value: Any):
         """Set configuration value."""
-        self.defaults[key] = value
+        self.config[key] = value
         
     def update(self, config_dict: Dict[str, Any]):
         """Update configuration with dictionary values."""
-        self.defaults.update(config_dict)
+        self.config.update(config_dict)
         
     def to_dict(self) -> Dict[str, Any]:
         """Return configuration as dictionary."""
-        return self.defaults.copy()
+        return self.config.copy()
         
     def save_to_file(self, config_path: str):
         """Save current configuration to YAML file."""
@@ -174,10 +223,12 @@ class Config:
             config_file.parent.mkdir(parents=True, exist_ok=True)
             
             with open(config_file, 'w', encoding='utf-8') as f:
-                yaml.dump(self.defaults, f, default_flow_style=False, indent=2)
+                yaml.dump(self.config, f, default_flow_style=False, indent=2)
+                
+            print(f"✅ Configuration saved to: {config_file}")
                 
         except Exception as e:
-            logging.error(f"Failed to save config to {config_path}: {e}")
+            print(f"❌ Failed to save config to {config_path}: {e}")
             
     def validate(self) -> bool:
         """Validate configuration values."""
@@ -187,34 +238,69 @@ class Config:
         required_dirs = ['GROUPS_DIR', 'OUTPUT_DIR', 'DATA_DIR', 'LOG_DIR']
         for dir_key in required_dirs:
             if not self.get(dir_key):
-                logging.error(f"Required directory configuration missing: {dir_key}")
+                print(f"❌ Required directory configuration missing: {dir_key}")
                 valid = False
                 
         # Validate numeric values
-        if not isinstance(self.REQUEST_TIMEOUT, (int, float)) or self.REQUEST_TIMEOUT <= 0:
-            logging.error("REQUEST_TIMEOUT must be a positive number")
+        if not isinstance(self.config['REQUEST_TIMEOUT'], (int, float)) or self.config['REQUEST_TIMEOUT'] <= 0:
+            print("❌ REQUEST_TIMEOUT must be a positive number")
             valid = False
             
-        if not isinstance(self.RATE_LIMIT_DELAY, (int, float)) or self.RATE_LIMIT_DELAY < 0:
-            logging.error("RATE_LIMIT_DELAY must be a non-negative number")
+        if not isinstance(self.config['RATE_LIMIT_DELAY'], (int, float)) or self.config['RATE_LIMIT_DELAY'] < 0:
+            print("❌ RATE_LIMIT_DELAY must be a non-negative number")
             valid = False
             
-        if not isinstance(self.MIN_CONFIDENCE_THRESHOLD, (int, float)) or not (0 <= self.MIN_CONFIDENCE_THRESHOLD <= 1):
-            logging.error("MIN_CONFIDENCE_THRESHOLD must be between 0 and 1")
+        if not isinstance(self.config['MIN_CONFIDENCE_THRESHOLD'], (int, float)) or not (0 <= self.config['MIN_CONFIDENCE_THRESHOLD'] <= 1):
+            print("❌ MIN_CONFIDENCE_THRESHOLD must be between 0 and 1")
             valid = False
             
         # Validate log level
         valid_log_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
-        if self.LOG_LEVEL.upper() not in valid_log_levels:
-            logging.error(f"LOG_LEVEL must be one of: {valid_log_levels}")
+        if self.config['LOG_LEVEL'].upper() not in valid_log_levels:
+            print(f"❌ LOG_LEVEL must be one of: {valid_log_levels}")
             valid = False
             
         return valid
+    
+    def debug_config_loading(self):
+        """Debug configuration loading process."""
+        print("\n🔍 Configuration Loading Debug:")
+        print("=" * 40)
+        
+        # Check what files exist
+        config_files = [
+            Path('config.yaml'),
+            Path('config.yml'), 
+            Path('ttp_config.yaml'),
+            Path('src/config.yaml')
+        ]
+        
+        print("📁 Config file search:")
+        for config_file in config_files:
+            exists = "✅" if config_file.exists() else "❌"
+            print(f"   {exists} {config_file}")
+        
+        # Show current values
+        print(f"\n⚙️  Current configuration:")
+        print(f"   LOG_LEVEL: {self.config['LOG_LEVEL']}")
+        print(f"   MIN_CONFIDENCE_THRESHOLD: {self.config['MIN_CONFIDENCE_THRESHOLD']}")
+        print(f"   ENABLE_HEURISTIC_EXTRACTION: {self.config['ENABLE_HEURISTIC_EXTRACTION']}")
+        
+        # Show environment variables
+        env_vars = [var for var in os.environ.keys() if var.startswith('TTP_')]
+        if env_vars:
+            print(f"\n🌍 Environment variables:")
+            for var in env_vars:
+                print(f"   {var} = {os.environ[var]}")
+        else:
+            print(f"\n🌍 No TTP_* environment variables set")
+        
+        print("=" * 40)
         
     def __str__(self) -> str:
         """String representation of configuration."""
-        return f"TTPAnalyzerConfig({len(self.defaults)} settings)"
+        return f"TTPAnalyzerConfig({len(self.config)} settings, LOG_LEVEL={self.config['LOG_LEVEL']})"
         
     def __repr__(self) -> str:
         """Detailed string representation."""
-        return f"TTPAnalyzerConfig({self.defaults})"
+        return f"TTPAnalyzerConfig({self.config})"
