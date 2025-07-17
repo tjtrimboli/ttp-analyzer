@@ -16,15 +16,20 @@ LOG_LEVEL: "INFO"                 # Logging level: DEBUG, INFO, WARNING, ERROR, 
 LOG_FORMAT: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 # HTTP Request Settings
-REQUEST_TIMEOUT: 30               # Increased timeout for better reliability
-RATE_LIMIT_DELAY: 1.5            # Reasonable delay between requests
+REQUEST_TIMEOUT: 15               # Increased timeout for better reliability
+RATE_LIMIT_DELAY: 0.5            # Reasonable delay between requests
 MAX_RETRIES: 3                    # Maximum number of retry attempts
 USER_AGENT: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
 # Enhanced TTP Extraction Settings
-MIN_CONFIDENCE_THRESHOLD: 0.3     # Lowered threshold for better recall
-ENABLE_HEURISTIC_EXTRACTION: true # Enabled for more comprehensive extraction
-MAX_REPORT_SIZE_MB: 100           # Increased limit for larger reports
+# Performance-focused settings
+MIN_CONFIDENCE_THRESHOLD: 0.5        # Higher threshold, fewer false positives
+ENABLE_HEURISTIC_EXTRACTION: false   # Disable for speed (regex only)
+MAX_REPORT_SIZE_MB: 50               # Reasonable limit
+
+# Streamlined settings
+MIN_CONTENT_LENGTH: 100              # Skip very short content
+CACHE_REPORTS: false                 # Disable caching for simplicity
 
 # Advanced Extraction Settings
 PRESERVE_TTP_CONTEXT: true        # Preserve content that might contain TTPs
@@ -35,7 +40,7 @@ CONTEXT_WINDOW_SIZE: 300          # Characters of context around matches
 # Content Processing Settings
 GENTLE_CONTENT_CLEANING: true     # Use gentler cleaning that preserves TTP context
 PRESERVE_SECURITY_URLS: true      # Keep security-related URLs
-MIN_CONTENT_LENGTH: 50            # Minimum content length to process
+MIN_CONTENT_LENGTH: 100            # Minimum content length to process
 
 # Visualization Settings
 FIGURE_DPI: 300                   # DPI for saved figures
@@ -48,7 +53,7 @@ ACTIVITY_GAP_THRESHOLD_DAYS: 30   # Threshold for detecting activity gaps
 
 # Performance Settings
 MAX_CONCURRENT_REQUESTS: 2        # Conservative to avoid being blocked
-CACHE_REPORTS: true               # Enable report caching
+CACHE_REPORTS: false               # Enable report caching
 CACHE_DURATION_HOURS: 48          # Longer cache duration
 
 # Quality Control Settings

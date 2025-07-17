@@ -147,6 +147,7 @@ data/attack_data.json
 tmp/
 temp/
 *.tmp
+*.bak
 
 # Configuration overrides
 config_local.yaml
