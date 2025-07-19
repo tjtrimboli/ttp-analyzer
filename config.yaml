@@ -1,5 +1,4 @@
-# Performance-Optimized TTP Analyzer Configuration
-# Designed for maximum speed with local MITRE data storage
+# TTP Analyzer Configuration File
 
 # Directory Structure
 GROUPS_DIR: "groups"
@@ -46,7 +45,7 @@ FIGURE_SIZE: [10, 6]                    # Smaller figures = faster rendering
 COLOR_PALETTE: "tab10"                  # Simpler palette
 
 # Logging Configuration
-LOG_LEVEL: "DEBUG"                 # Logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+LOG_LEVEL: "INFO"                 # Logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL
 LOG_FORMAT: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 LOG_FILE: "logs/ttp_analyzer.log"
 

@@ -540,7 +540,7 @@ Examples:
         if args.system_info:
             info = analyzer.get_system_info()
             print(f"\n=== TTP Analyzer System Information ===")
-            print(f" Mode: {'✅ Enabled' if info['_mode'] else '❌ Standard'}")
+            print(f" Mode: {'Enabled' if info['_mode'] else 'Standard'}")
             print(f"Version: {info['version']}")
             print(f"Techniques Loaded: {info.get('techniques_loaded', 'Unknown')}")
             if 'patterns_compiled' in info:
@@ -556,11 +556,11 @@ Examples:
         if args.update_attack_data:
             success = analyzer.update_attack_data()
             if success:
-                print("✅ MITRE ATT&CK data updated successfully")
+                print("MITRE ATT&CK data updated successfully")
                 if _MODE:
-                    print("✅  extraction patterns compiled")
+                    print(" extraction patterns compiled")
             else:
-                print("❌ Failed to update MITRE ATT&CK data")
+                print("Failed to update MITRE ATT&CK data")
                 sys.exit(1)
             return
         
@@ -582,11 +582,11 @@ Examples:
             parser.error("Either --actor, --list-actors, --update-attack-data, or --system-info must be specified")
         
         # Run  analysis
-        print(f"🔍 Starting  analysis for {args.actor}...")
+        print(f"Starting  analysis for {args.actor}...")
         if _MODE:
-            print("✅ Using  TTP extraction components")
+            print("Using  TTP extraction components")
         else:
-            print("⚠️  Using standard components - consider upgrading for better results")
+            print("Using standard components - consider upgrading for better results")
         
         results = analyzer.analyze_actor(args.actor)
         
@@ -633,7 +633,7 @@ Examples:
         # Show any parsing errors
         if results.get('parsing_errors'):
             error_count = len(results['parsing_errors'])
-            print(f"⚠️  {error_count} parsing errors occurred (see logs for details)")
+            print(f"{error_count} parsing errors occurred (see logs for details)")
         
     except KeyboardInterrupt:
         print("\nOperation cancelled by user")

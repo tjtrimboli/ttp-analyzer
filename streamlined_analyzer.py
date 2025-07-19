@@ -297,7 +297,7 @@ def main():
         # Handle commands
         if args.update_attack_data:
             success = analyzer.update_attack_data()
-            print("✅ MITRE data updated" if success else "❌ Update failed")
+            print("MITRE data updated" if success else "Update failed")
             return
         
         if args.list_actors:
@@ -315,7 +315,7 @@ def main():
             parser.error("Specify --actor, --list-actors, or --update-attack-data")
         
         # Run analysis
-        print(f"🚀 Analyzing {args.actor} (streamlined mode: {STREAMLINED_MODE})...")
+        print(f"Analyzing {args.actor} (streamlined mode: {STREAMLINED_MODE})...")
         
         results = analyzer.analyze_actor(args.actor)
         
@@ -342,7 +342,7 @@ def main():
         
         # Show advice for zero TTPs
         if results['total_ttps'] == 0:
-            print("\n💡 Troubleshooting Tips:")
+            print("\nTroubleshooting Tips:")
             print("  • Check that reports contain explicit MITRE technique IDs (T1234, T1234.001)")
             print("  • Verify reports.txt URLs are accessible and contain threat intelligence")
             print("  • Consider lowering MIN_CONFIDENCE_THRESHOLD in config if too restrictive")
@@ -357,7 +357,6 @@ def main():
             import traceback
             traceback.print_exc()
         sys.exit(1)
-
 
 if __name__ == "__main__":
     main()

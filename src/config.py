@@ -1,6 +1,5 @@
 """
-Fixed Configuration Management Module for TTP Analyzer.
-Proper precedence order: YAML file > Environment variables > Python defaults
+TTP Analyzer Configuration File
 """
 
 import os
@@ -23,9 +22,9 @@ class Config:
         yaml_config = self._load_yaml_config(config_path)
         if yaml_config:
             self.config.update(yaml_config)
-            print(f"✅ Loaded configuration from YAML file")
+            print(f"Loaded configuration from YAML file")
         else:
-            print("⚠️  No YAML config found, using defaults")
+            print("No YAML config found, using defaults")
         
         # Step 3: Override with environment variables (highest priority)
         self._load_from_environment()
@@ -34,7 +33,7 @@ class Config:
         self._create_directories()
         
         # Debug: Show final log level
-        print(f"🔧 Final LOG_LEVEL: {self.config.get('LOG_LEVEL')}")
+        print(f"Final LOG_LEVEL: {self.config.get('LOG_LEVEL')}")
         
     def _get_python_defaults(self) -> Dict[str, Any]:
         """Get default configuration values from Python."""
@@ -101,11 +100,11 @@ class Config:
                     break
         
         if not config_file or not config_file.exists():
-            print(f"ℹ️  No YAML config file found (looked for: {[str(p) for p in possible_configs if not config_path]})")
+            print(f"No YAML config file found (looked for: {[str(p) for p in possible_configs if not config_path]})")
             return None
         
         try:
-            print(f"📄 Loading config from: {config_file}")
+            print(f"Loading config from: {config_file}")
             
             with open(config_file, 'r', encoding='utf-8') as f:
                 yaml_config = yaml.safe_load(f)
@@ -113,19 +112,19 @@ class Config:
             if yaml_config:
                 # Debug: Show what was loaded
                 if 'LOG_LEVEL' in yaml_config:
-                    print(f"📄 YAML LOG_LEVEL: {yaml_config['LOG_LEVEL']}")
+                    print(f"YAML LOG_LEVEL: {yaml_config['LOG_LEVEL']}")
                 
-                print(f"✅ Loaded {len(yaml_config)} settings from YAML")
+                print(f"Loaded {len(yaml_config)} settings from YAML")
                 return yaml_config
             else:
-                print(f"⚠️  YAML file is empty: {config_file}")
+                print(f"YAML file is empty: {config_file}")
                 return None
                 
         except yaml.YAMLError as e:
-            print(f"❌ YAML parsing error in {config_file}: {e}")
+            print(f"YAML parsing error in {config_file}: {e}")
             return None
         except Exception as e:
-            print(f"❌ Failed to load config from {config_file}: {e}")
+            print(f"Failed to load config from {config_file}: {e}")
             return None
     
     def _load_from_environment(self):
@@ -163,13 +162,13 @@ class Config:
                         self.config[config_key] = int(value)
                         env_overrides += 1
                     except ValueError:
-                        print(f"⚠️  Invalid integer value for {env_var}: {value}")
+                        print(f"Invalid integer value for {env_var}: {value}")
                 elif config_key in ['RATE_LIMIT_DELAY', 'MIN_CONFIDENCE_THRESHOLD']:
                     try:
                         self.config[config_key] = float(value)
                         env_overrides += 1
                     except ValueError:
-                        print(f"⚠️  Invalid float value for {env_var}: {value}")
+                        print(f"Invalid float value for {env_var}: {value}")
                 elif config_key in ['ENABLE_HEURISTIC_EXTRACTION', 'CACHE_REPORTS']:
                     self.config[config_key] = value.lower() in ('true', '1', 'yes', 'on')
                     env_overrides += 1
@@ -177,10 +176,10 @@ class Config:
                     self.config[config_key] = value
                     env_overrides += 1
                     
-                print(f"🌍 Environment override: {config_key} = {self.config[config_key]}")
+                print(f"Environment override: {config_key} = {self.config[config_key]}")
         
         if env_overrides > 0:
-            print(f"✅ Applied {env_overrides} environment variable overrides")
+            print(f"Applied {env_overrides} environment variable overrides")
     
     def _create_directories(self):
         """Create required directories if they don't exist."""
@@ -225,10 +224,10 @@ class Config:
             with open(config_file, 'w', encoding='utf-8') as f:
                 yaml.dump(self.config, f, default_flow_style=False, indent=2)
                 
-            print(f"✅ Configuration saved to: {config_file}")
+            print(f"Configuration saved to: {config_file}")
                 
         except Exception as e:
-            print(f"❌ Failed to save config to {config_path}: {e}")
+            print(f"Failed to save config to {config_path}: {e}")
             
     def validate(self) -> bool:
         """Validate configuration values."""
@@ -238,26 +237,26 @@ class Config:
         required_dirs = ['GROUPS_DIR', 'OUTPUT_DIR', 'DATA_DIR', 'LOG_DIR']
         for dir_key in required_dirs:
             if not self.get(dir_key):
-                print(f"❌ Required directory configuration missing: {dir_key}")
+                print(f"Required directory configuration missing: {dir_key}")
                 valid = False
                 
         # Validate numeric values
         if not isinstance(self.config['REQUEST_TIMEOUT'], (int, float)) or self.config['REQUEST_TIMEOUT'] <= 0:
-            print("❌ REQUEST_TIMEOUT must be a positive number")
+            print("REQUEST_TIMEOUT must be a positive number")
             valid = False
             
         if not isinstance(self.config['RATE_LIMIT_DELAY'], (int, float)) or self.config['RATE_LIMIT_DELAY'] < 0:
-            print("❌ RATE_LIMIT_DELAY must be a non-negative number")
+            print("RATE_LIMIT_DELAY must be a non-negative number")
             valid = False
             
         if not isinstance(self.config['MIN_CONFIDENCE_THRESHOLD'], (int, float)) or not (0 <= self.config['MIN_CONFIDENCE_THRESHOLD'] <= 1):
-            print("❌ MIN_CONFIDENCE_THRESHOLD must be between 0 and 1")
+            print("MIN_CONFIDENCE_THRESHOLD must be between 0 and 1")
             valid = False
             
         # Validate log level
         valid_log_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
         if self.config['LOG_LEVEL'].upper() not in valid_log_levels:
-            print(f"❌ LOG_LEVEL must be one of: {valid_log_levels}")
+            print(f"LOG_LEVEL must be one of: {valid_log_levels}")
             valid = False
             
         return valid
@@ -277,11 +276,11 @@ class Config:
         
         print("📁 Config file search:")
         for config_file in config_files:
-            exists = "✅" if config_file.exists() else "❌"
+            exists = "" if config_file.exists() else ""
             print(f"   {exists} {config_file}")
         
         # Show current values
-        print(f"\n⚙️  Current configuration:")
+        print(f"\nCurrent configuration:")
         print(f"   LOG_LEVEL: {self.config['LOG_LEVEL']}")
         print(f"   MIN_CONFIDENCE_THRESHOLD: {self.config['MIN_CONFIDENCE_THRESHOLD']}")
         print(f"   ENABLE_HEURISTIC_EXTRACTION: {self.config['ENABLE_HEURISTIC_EXTRACTION']}")
@@ -289,11 +288,11 @@ class Config:
         # Show environment variables
         env_vars = [var for var in os.environ.keys() if var.startswith('TTP_')]
         if env_vars:
-            print(f"\n🌍 Environment variables:")
+            print(f"\nEnvironment variables:")
             for var in env_vars:
                 print(f"   {var} = {os.environ[var]}")
         else:
-            print(f"\n🌍 No TTP_* environment variables set")
+            print(f"\nNo TTP_* environment variables set")
         
         print("=" * 40)
         
