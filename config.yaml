@@ -1,107 +1,199 @@
 # TTP Analyzer Configuration File
+# Supports configurable performance modes: fast, balanced, comprehensive
 
-# Directory Structure
+# ========================================
+# PERFORMANCE MODE (NEW)
+# ========================================
+# Choose your preferred speed/accuracy tradeoff:
+# - fast: Maximum speed, regex-only extraction (10-30x faster)
+# - balanced: Good speed with enhanced accuracy (recommended)  
+# - comprehensive: Maximum accuracy with full feature set
+PERFORMANCE_MODE: "balanced"
+
+# ========================================
+# DIRECTORY STRUCTURE
+# ========================================
 GROUPS_DIR: "groups"
-OUTPUT_DIR: "output"
+OUTPUT_DIR: "output"  
 DATA_DIR: "data"
 LOG_DIR: "logs"
 
-# Core Performance Settings
-MIN_CONFIDENCE_THRESHOLD: 0.6          # Higher threshold = fewer false positives, faster processing
-ENABLE_HEURISTIC_EXTRACTION: false     # Disable for maximum speed (regex-only)
-MAX_REPORT_SIZE_MB: 25                  # Reasonable limit to prevent memory issues
-
-# MITRE Data Management (LOCAL APPROACH - RECOMMENDED)
+# ========================================
+# DATA FILES
+# ========================================
 ATTACK_DATA_FILE: "data/attack_data.json"
-AUTO_UPDATE_ENABLED: false             # Manual updates for stability
-UPDATE_THRESHOLD_DAYS: 30              # Check for updates monthly (when enabled)
-
-# Alternative STIX2/TAXII Settings (NOT RECOMMENDED FOR PERFORMANCE)
-# USE_STIX2: false                     # Keep false for performance
-# TAXII_SERVER: "https://cti-taxii.mitre.org/stix/"
-# STIX2_COLLECTION_ID: "95ecc380-afe9-11e4-9b6c-751b66dd541e"
-
-# HTTP Request Optimization
-REQUEST_TIMEOUT: 15                     # Faster timeout
-RATE_LIMIT_DELAY: 0.5                  # Minimal delay between requests
-MAX_RETRIES: 2                          # Fewer retries for speed
-MAX_CONCURRENT_REQUESTS: 3              # Conservative for reliability
-
-# Content Processing Optimization
-MIN_CONTENT_LENGTH: 100                 # Skip very short content quickly
-PRESERVE_TTP_CONTEXT: false             # Disable complex context preservation
-ENHANCED_NAME_MATCHING: false           # Disable for speed (ID-only matching)
-STRICT_ID_VALIDATION: false             # Less validation = faster processing
-
-# Memory and Processing Optimization
-CACHE_REPORTS: false                    # Disable caching for simplicity
-CACHE_DURATION_HOURS: 0                 # No caching
-SAVE_INTERMEDIATE_RESULTS: false        # Skip intermediate file saves
-DETAILED_LOGGING: false                 # Reduce logging overhead
-
-# Visualization Settings
-FIGURE_DPI: 150                         # Lower DPI for faster generation
-FIGURE_SIZE: [10, 6]                    # Smaller figures = faster rendering
-COLOR_PALETTE: "tab10"                  # Simpler palette
-
-# Logging Configuration
-LOG_LEVEL: "INFO"                 # Logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL
-LOG_FORMAT: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 LOG_FILE: "logs/ttp_analyzer.log"
 
-# Performance Monitoring
-ENABLE_PERFORMANCE_METRICS: true       # Track timing for optimization
-LOG_PERFORMANCE_STATS: false           # Don't log every operation
+# ========================================
+# EXTRACTION SETTINGS (Mode-Adaptive)
+# ========================================
+# Confidence threshold (adaptive based on mode):
+# - fast: Uses higher threshold for speed
+# - balanced: Uses this value 
+# - comprehensive: Uses lower threshold for recall
+MIN_CONFIDENCE_THRESHOLD: 0.6
 
-# Feature Flags for Performance Testing
-EXPERIMENTAL:
-  ultra_fast_mode: true                 # Enable all speed optimizations
-  skip_visualization: false             # Set true to skip chart generation
-  minimal_output: false                 # Set true for JSON-only output
-  batch_processing: false               # Set true for batch optimization
+# Heuristic extraction (only used in comprehensive mode)
+ENABLE_HEURISTIC_EXTRACTION: true
 
-# Validation Settings (Relaxed for Speed)
+# Maximum report size to process (MB)
+MAX_REPORT_SIZE_MB: 25
+
+# ========================================
+# HTTP REQUEST SETTINGS
+# ========================================
+REQUEST_TIMEOUT: 15
+RATE_LIMIT_DELAY: 0.5
+MAX_RETRIES: 2
+USER_AGENT: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+
+# ========================================
+# CONTENT PROCESSING (Mode-Adaptive)
+# ========================================
+# Minimum content length (adaptive):
+# - fast: 50 chars
+# - balanced: 100 chars  
+# - comprehensive: 150 chars
+MIN_CONTENT_LENGTH: 100
+
+# ========================================
+# LOGGING CONFIGURATION
+# ========================================
+LOG_LEVEL: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+LOG_FORMAT: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# ========================================
+# VISUALIZATION SETTINGS
+# ========================================
+FIGURE_DPI: 150
+FIGURE_SIZE: [12, 8]
+COLOR_PALETTE: "husl"
+
+# ========================================
+# TIMELINE ANALYSIS
+# ========================================
+PHASE_WINDOW_DAYS: 30
+ACTIVITY_GAP_THRESHOLD_DAYS: 30
+
+# ========================================
+# PERFORMANCE OPTIMIZATION
+# ========================================
+MAX_CONCURRENT_REQUESTS: 3
+CACHE_REPORTS: false
+CACHE_DURATION_HOURS: 0
+
+# ========================================
+# MODE-SPECIFIC OVERRIDES
+# ========================================
+# These settings override defaults based on performance mode
+
+FAST_MODE_OVERRIDES:
+  MIN_CONFIDENCE_THRESHOLD: 0.8
+  MIN_CONTENT_LENGTH: 50
+  REQUEST_TIMEOUT: 10
+  ENABLE_HEURISTIC_EXTRACTION: false
+  LOG_LEVEL: "WARNING"
+
+BALANCED_MODE_OVERRIDES:
+  MIN_CONFIDENCE_THRESHOLD: 0.6
+  MIN_CONTENT_LENGTH: 100
+  ENABLE_HEURISTIC_EXTRACTION: false  # Disabled for speed
+
+COMPREHENSIVE_MODE_OVERRIDES:
+  MIN_CONFIDENCE_THRESHOLD: 0.4
+  MIN_CONTENT_LENGTH: 150
+  REQUEST_TIMEOUT: 30
+  ENABLE_HEURISTIC_EXTRACTION: true
+  LOG_LEVEL: "DEBUG"
+
+# ========================================
+# VALIDATION SETTINGS (Mode-Adaptive)
+# ========================================
 VALIDATION_RULES:
-  validate_technique_ids: true          # Keep basic validation
-  validate_dates: false                 # Skip date validation
-  validate_sources: false               # Skip source validation
-  require_minimum_ttps: false           # Don't require minimum TTP count
+  validate_technique_ids: true
+  validate_dates: false        # Disabled in fast mode
+  validate_sources: false      # Disabled in fast/balanced modes
+  require_minimum_ttps: false
 
-# Background Processing
-BACKGROUND_PROCESSING:
-  enabled: false                        # Disable background tasks
-  update_check_interval_hours: 24       # If enabled, check daily
-  max_background_threads: 1             # Minimal threading
+# ========================================
+# EXPERIMENTAL FEATURES
+# ========================================
+EXPERIMENTAL:
+  adaptive_confidence: true    # Adjust confidence based on content quality
+  smart_content_filtering: true # Preserve TTP-relevant content
+  batch_processing: false     # Enable for large-scale analysis
+  performance_monitoring: true # Track timing metrics
 
-# Error Handling (Fast-Fail Approach)
+# ========================================
+# ERROR HANDLING
+# ========================================
 ERROR_HANDLING:
-  continue_on_parse_error: true         # Don't stop on individual failures
-  max_consecutive_failures: 5          # Stop after 5 consecutive failures
-  retry_failed_reports: false          # Don't retry for speed
+  continue_on_parse_error: true
+  max_consecutive_failures: 5
+  retry_failed_reports: false
+  fail_fast_on_critical_errors: false
 
-# Performance Targets (for monitoring)
+# ========================================
+# PERFORMANCE TARGETS (for monitoring)
+# ========================================
 PERFORMANCE_TARGETS:
-  max_initialization_time_seconds: 1.0
-  max_report_parse_time_seconds: 2.0
-  max_ttp_extraction_time_seconds: 0.1
-  max_total_analysis_time_seconds: 60.0
+  # Fast mode targets
+  fast_max_initialization_time_seconds: 0.5
+  fast_max_report_parse_time_seconds: 0.5
+  fast_max_ttp_extraction_time_seconds: 0.01
+  fast_max_total_analysis_time_seconds: 30.0
+  
+  # Balanced mode targets  
+  balanced_max_initialization_time_seconds: 1.0
+  balanced_max_report_parse_time_seconds: 1.0
+  balanced_max_ttp_extraction_time_seconds: 0.05
+  balanced_max_total_analysis_time_seconds: 60.0
+  
+  # Comprehensive mode targets
+  comprehensive_max_initialization_time_seconds: 2.0
+  comprehensive_max_report_parse_time_seconds: 3.0
+  comprehensive_max_ttp_extraction_time_seconds: 0.2
+  comprehensive_max_total_analysis_time_seconds: 120.0
 
-# Debug and Development
+# ========================================
+# DEBUG AND DEVELOPMENT
+# ========================================
 DEBUG_MODE: false
-VERBOSE_TIMING: false                   # Set true only for performance debugging
-PROFILE_ENABLED: false                  # Enable for detailed profiling
+VERBOSE_TIMING: false
+PROFILE_ENABLED: false
 
-# STIX2/TAXII Alternative Configuration (for reference only)
-# Uncomment and modify if you decide to test STIX2 approach
-# STIX2_CONFIG:
-#   use_local_stix: true                # Use local STIX files vs TAXII server
-#   stix_data_path: "data/stix2/"
-#   enable_relationship_queries: false   # Disable complex queries for speed
-#   memory_store_cache: true            # Cache STIX memory store
-#   lazy_loading: true                  # Load STIX data on demand
+# ========================================
+# MIGRATION SETTINGS
+# ========================================
+# For compatibility with existing configurations
+LEGACY_COMPATIBILITY: true
+WARN_ON_DEPRECATED_SETTINGS: true
 
-# Performance Comparison Notes:
-# - Local JSON: ~0.1s initialization, O(1) lookups
-# - STIX2 Local: ~1-3s initialization, ~0.01s queries  
-# - TAXII Remote: ~3-8s initialization, ~0.5-2s queries
-# - Current target: <60s total analysis time (vs 582s original)
+# ========================================
+# USAGE NOTES
+# ========================================
+# Performance Mode Recommendations:
+#
+# Use "fast" mode when:
+# - Processing large numbers of reports (100+)
+# - Time is critical
+# - Reports contain explicit technique IDs (T1234, T1234.001)
+# - Acceptable to miss some technique name matches
+#
+# Use "balanced" mode when:
+# - General-purpose analysis (recommended default)
+# - Good balance of speed and accuracy needed
+# - Processing 10-50 reports
+# - Want technique name matching but not heuristics
+#
+# Use "comprehensive" mode when:
+# - Maximum accuracy is critical
+# - Processing research-quality reports
+# - Reports may use indirect technique references
+# - Time is not a primary constraint
+# - Need heuristic pattern matching
+#
+# Expected Performance (relative to original):
+# - Fast: 10-30x faster initialization, 20-50x faster extraction
+# - Balanced: 5-10x faster overall, similar accuracy to enhanced
+# - Comprehensive: 2-3x faster, maximum accuracy

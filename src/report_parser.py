@@ -1,6 +1,6 @@
 """
-Enhanced Report Parser Module with improved content preservation for TTP extraction.
-This version is more careful about preserving TTP-relevant content during cleaning.
+Report Parser - Combines fast and comprehensive parsing approaches
+Configurable performance modes: fast, balanced, comprehensive
 """
 
 import requests
@@ -26,38 +26,59 @@ except ImportError:
 
 
 class ReportParser:
-    """Enhanced parser with better content preservation for TTP extraction."""
+    """
+    report parser with configurable performance modes.
+    
+    Modes:
+    - fast: Quick text extraction with minimal overhead
+    - balanced: Smart content preservation with reasonable speed
+    - comprehensive: Full content preservation with enhanced parsing
+    """
     
     def __init__(self, config):
-        """Initialize the enhanced report parser."""
+        """Initialize the parser."""
         self.config = config
         self.logger = logging.getLogger(__name__)
         self.session = requests.Session()
         
-        # Enhanced headers for better compatibility
-        self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Accept-Encoding': 'gzip, deflate',
-            'DNT': '1',
-            'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '1'
-        })
+        # Determine performance mode
+        self.performance_mode = getattr(config, 'PERFORMANCE_MODE', 'balanced').lower()
+        if self.performance_mode not in ['fast', 'balanced', 'comprehensive']:
+            self.performance_mode = 'balanced'
+        
+        self.logger.info(f"Initializing report parser in '{self.performance_mode}' mode")
+        
+        # Configure session based on performance mode
+        if self.performance_mode == 'fast':
+            # Minimal headers for speed
+            self.session.headers.update({
+                'User-Agent': 'Mozilla/5.0 (compatible; TTP-Analyzer)',
+                'Accept': 'text/html,*/*;q=0.9'
+            })
+        else:
+            # More complete headers for compatibility
+            self.session.headers.update({
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'DNT': '1',
+                'Connection': 'keep-alive'
+            })
         
         self.last_request_time = 0
         
-        # TTP-relevant keywords to preserve during cleaning
-        self.ttp_keywords = {
-            'mitre', 'att&ck', 'attack', 'technique', 'tactic', 'ttp', 'adversary', 'attacker',
-            'threat actor', 'campaign', 'malicious', 'security', 'cybersecurity', 'intelligence',
-            'observed', 'detected', 'employed', 'used', 'utilized', 'leveraged', 'implements',
-            'phishing', 'spearphishing', 'powershell', 'command', 'script', 'injection',
-            'credential', 'dumping', 'discovery', 'reconnaissance', 'exfiltration', 'persistence'
-        }
+        # TTP-relevant keywords for content preservation (used in balanced/comprehensive modes)
+        if self.performance_mode != 'fast':
+            self.ttp_keywords = {
+                'mitre', 'att&ck', 'attack', 'technique', 'tactic', 'ttp', 'adversary', 'attacker',
+                'threat actor', 'campaign', 'malicious', 'security', 'cybersecurity', 'intelligence',
+                'observed', 'detected', 'employed', 'used', 'utilized', 'leveraged', 'implements',
+                'phishing', 'spearphishing', 'powershell', 'command', 'script', 'injection',
+                'credential', 'dumping', 'discovery', 'reconnaissance', 'exfiltration', 'persistence'
+            }
         
     def parse_report(self, source: Union[str, Path]) -> Optional[Dict]:
-        """Parse a report with enhanced content preservation."""
+        """Parse a report with mode-appropriate processing."""
         self.logger.debug(f"Parsing report from: {source}")
         
         try:
@@ -71,21 +92,17 @@ class ReportParser:
         except Exception as e:
             self.logger.error(f"Failed to parse report from {source}: {e}")
             return None
-            
+    
     def _is_url(self, source: str) -> bool:
         """Check if source is a URL."""
-        try:
-            result = urlparse(source)
-            return all([result.scheme, result.netloc])
-        except:
-            return False
-            
+        return source.startswith(('http://', 'https://'))
+    
     def _is_file_path(self, source: str) -> bool:
         """Check if source is a file path."""
         return Path(source).exists()
-        
+    
     def _parse_web_report(self, url: str) -> Dict:
-        """Parse a web report with enhanced error handling."""
+        """Parse a web report with mode-appropriate handling."""
         self._rate_limit()
         
         try:
@@ -102,7 +119,7 @@ class ReportParser:
         except requests.RequestException as e:
             self.logger.error(f"Failed to fetch URL {url}: {e}")
             raise
-            
+    
     def _parse_file_report(self, file_path: Path) -> Dict:
         """Parse a local file report."""
         if file_path.suffix.lower() == '.pdf':
@@ -111,9 +128,9 @@ class ReportParser:
         else:
             with open(file_path, 'r', encoding='utf-8') as f:
                 return self._parse_raw_content(f.read(), str(file_path))
-                
+    
     def _parse_html_content(self, html_content: str, source: str) -> Dict:
-        """Enhanced HTML parsing with better content preservation."""
+        """Parse HTML content with mode-appropriate processing."""
         if not BS4_SUPPORT:
             self.logger.warning("BeautifulSoup not available, using basic text extraction")
             return self._parse_raw_content(html_content, source)
@@ -121,29 +138,29 @@ class ReportParser:
         try:
             soup = BeautifulSoup(html_content, 'html.parser')
             
-            # More selective removal - preserve content that might contain TTPs
-            self._selective_element_removal(soup)
+            # Apply mode-appropriate element removal
+            if self.performance_mode == 'fast':
+                self._fast_element_removal(soup)
+            elif self.performance_mode == 'balanced':
+                self._balanced_element_removal(soup)
+            else:  # comprehensive
+                self._comprehensive_element_removal(soup)
             
-            # Extract title with enhanced strategies
-            title = self._extract_enhanced_title(soup)
+            # Extract title with appropriate strategy
+            title = self._extract_title(soup)
             
-            # Enhanced content extraction with TTP awareness
-            content = self._extract_ttp_aware_content(soup)
+            # Extract content with mode-appropriate strategy
+            content = self._extract_content(soup)
             
-            # Gentler content cleaning that preserves TTP context
-            cleaned_content = self._gentle_content_cleaning(content)
+            # Apply mode-appropriate content cleaning
+            cleaned_content = self._clean_content(content)
             
-            # Enhanced date extraction
-            pub_date = self._extract_date_enhanced(html_content, soup)
-            
-            # Content quality validation with TTP awareness
-            if len(cleaned_content.strip()) < 100:
-                self.logger.warning(f"Short content from {source}: {len(cleaned_content)} chars")
-                # Try alternative extraction methods
-                alt_content = self._alternative_content_extraction(soup)
-                if len(alt_content) > len(cleaned_content):
-                    cleaned_content = self._gentle_content_cleaning(alt_content)
-                    self.logger.debug(f"Used alternative extraction: {len(cleaned_content)} chars")
+            # Extract publication date (comprehensive mode only for speed)
+            pub_date = None
+            if self.performance_mode == 'comprehensive':
+                pub_date = self._extract_date_comprehensive(html_content, soup)
+            else:
+                pub_date = self._extract_date_simple(html_content)
             
             result = {
                 'source': source,
@@ -152,34 +169,36 @@ class ReportParser:
                 'publication_date': pub_date,
                 'content_type': 'html',
                 'content_length': len(cleaned_content),
-                'parsed_at': datetime.utcnow().isoformat()
+                'parsed_at': datetime.utcnow().isoformat(),
+                'parser_mode': self.performance_mode
             }
             
-            self.logger.debug(f"Extracted {len(cleaned_content)} characters from HTML")
+            self.logger.debug(f"Extracted {len(cleaned_content)} characters from HTML in {self.performance_mode} mode")
             return result
             
         except Exception as e:
             self.logger.error(f"Error parsing HTML content from {source}: {e}")
             return self._parse_raw_content(html_content, source)
     
-    def _selective_element_removal(self, soup: BeautifulSoup):
-        """More selective removal that preserves TTP-relevant content."""
-        # Remove obviously irrelevant elements
+    def _fast_element_removal(self, soup: BeautifulSoup):
+        """Fast element removal for speed."""
+        # Remove only the most problematic elements
+        for tag in soup(['script', 'style', 'nav', 'footer']):
+            tag.decompose()
+    
+    def _balanced_element_removal(self, soup: BeautifulSoup):
+        """Balanced element removal - preserve TTP content while removing clutter."""
+        # Remove obviously unwanted elements
         remove_tags = ["script", "style", "iframe", "embed", "object"]
-        
-        # Be more careful with navigation, headers, footers - they might contain relevant info
-        potential_remove = ["nav", "header", "footer", "sidebar", "menu"]
-        
-        # Remove scripts and styles completely
         for tag in soup(remove_tags):
             tag.decompose()
         
-        # For potential removes, check if they contain TTP-relevant content
+        # Smart removal of navigation elements
+        potential_remove = ["nav", "header", "footer", "sidebar"]
         for tag_name in potential_remove:
             for tag in soup.find_all(tag_name):
                 tag_text = tag.get_text().lower()
-                
-                # If the element contains TTP-relevant keywords, keep it
+                # Keep if contains TTP-relevant keywords
                 if not any(keyword in tag_text for keyword in self.ttp_keywords):
                     tag.decompose()
         
@@ -187,88 +206,94 @@ class ReportParser:
         for comment in soup.find_all(string=lambda text: isinstance(text, Comment)):
             comment.extract()
     
-    def _extract_enhanced_title(self, soup: BeautifulSoup) -> str:
-        """Enhanced title extraction with multiple fallbacks."""
+    def _comprehensive_element_removal(self, soup: BeautifulSoup):
+        """Comprehensive element removal with maximum content preservation."""
+        # Same as balanced but with additional intelligence
+        self._balanced_element_removal(soup)
+        
+        # Additional cleanup for comprehensive mode
+        # Remove elements with specific classes that are typically non-content
+        unwanted_classes = ['advertisement', 'ad-banner', 'social-share', 'related-articles']
+        for class_name in unwanted_classes:
+            for element in soup.find_all(class_=lambda x: x and class_name in ' '.join(x).lower()):
+                element_text = element.get_text().lower()
+                if not any(keyword in element_text for keyword in self.ttp_keywords):
+                    element.decompose()
+    
+    def _extract_title(self, soup: BeautifulSoup) -> str:
+        """Extract title with mode-appropriate complexity."""
         title_candidates = []
         
-        # Strategy 1: HTML title tag
+        # Strategy 1: HTML title tag (all modes)
         if soup.title and soup.title.string:
             title_candidates.append(soup.title.string.strip())
         
-        # Strategy 2: Multiple heading levels
-        for heading_tag in ['h1', 'h2', 'h3']:
+        # Strategy 2: Headings (all modes)
+        for heading_tag in ['h1', 'h2']:
             headings = soup.find_all(heading_tag)
-            for heading in headings:
+            for heading in headings[:2]:  # Limit for speed
                 text = heading.get_text().strip()
-                if 10 < len(text) < 200:  # Reasonable title length
-                    title_candidates.append(text)
-        
-        # Strategy 3: Meta tags
-        meta_selectors = [
-            ('meta', {'property': 'og:title'}),
-            ('meta', {'name': 'title'}),
-            ('meta', {'name': 'dc.title'}),
-            ('meta', {'property': 'twitter:title'})
-        ]
-        
-        for tag_name, attrs in meta_selectors:
-            element = soup.find(tag_name, attrs)
-            if element and element.get('content'):
-                title_candidates.append(element['content'].strip())
-        
-        # Strategy 4: Content-based classes
-        title_selectors = [
-            '.article-title', '.post-title', '.entry-title', '.blog-title',
-            '.page-title', '.content-title', '.report-title', '.document-title'
-        ]
-        
-        for selector in title_selectors:
-            elements = soup.select(selector)
-            for element in elements:
-                text = element.get_text().strip()
                 if 10 < len(text) < 200:
                     title_candidates.append(text)
         
-        # Choose the best title (prefer ones with security/threat keywords)
-        if title_candidates:
-            # Prefer titles with TTP-relevant keywords
-            for candidate in title_candidates:
-                candidate_lower = candidate.lower()
-                if any(keyword in candidate_lower for keyword in self.ttp_keywords):
-                    return candidate[:200]
+        # Strategy 3: Meta tags (balanced/comprehensive modes)
+        if self.performance_mode != 'fast':
+            meta_selectors = [
+                ('meta', {'property': 'og:title'}),
+                ('meta', {'name': 'title'}),
+                ('meta', {'property': 'twitter:title'})
+            ]
             
-            # Otherwise, return the first reasonable candidate
+            for tag_name, attrs in meta_selectors:
+                element = soup.find(tag_name, attrs)
+                if element and element.get('content'):
+                    title_candidates.append(element['content'].strip())
+        
+        # Choose best title
+        if title_candidates:
+            # Prefer titles with TTP-relevant keywords if in balanced/comprehensive mode
+            if self.performance_mode != 'fast':
+                for candidate in title_candidates:
+                    candidate_lower = candidate.lower()
+                    if any(keyword in candidate_lower for keyword in self.ttp_keywords):
+                        return candidate[:200]
+            
             return title_candidates[0][:200]
         
         return ""
     
-    def _extract_ttp_aware_content(self, soup: BeautifulSoup) -> str:
-        """Extract content with awareness of TTP-relevant information."""
-        content_strategies = [
-            self._extract_semantic_content,
-            self._extract_class_based_content,
-            self._extract_paragraph_content,
-            self._extract_all_text_content
-        ]
+    def _extract_content(self, soup: BeautifulSoup) -> str:
+        """Extract content with mode-appropriate strategy."""
+        if self.performance_mode == 'fast':
+            # Fast extraction - just get all text
+            return soup.get_text()
         
-        for strategy in content_strategies:
-            try:
-                content = strategy(soup)
-                if content and len(content.strip()) > 200:
-                    # Check if content contains TTP-relevant information
-                    content_lower = content.lower()
-                    ttp_score = sum(1 for keyword in self.ttp_keywords if keyword in content_lower)
-                    
-                    if ttp_score >= 2:  # At least 2 TTP-relevant keywords
-                        return content
-                    elif len(content.strip()) > 1000:  # Long content might be worth keeping
-                        return content
-            except Exception as e:
-                self.logger.debug(f"Content extraction strategy failed: {e}")
-                continue
+        elif self.performance_mode == 'balanced':
+            # Balanced extraction - smart content selection
+            content_strategies = [
+                self._extract_semantic_content,
+                self._extract_class_based_content,
+                self._extract_paragraph_content
+            ]
+            
+            for strategy in content_strategies:
+                try:
+                    content = strategy(soup)
+                    if content and len(content.strip()) > 200:
+                        # Quick TTP relevance check
+                        content_lower = content.lower()
+                        ttp_score = sum(1 for keyword in self.ttp_keywords if keyword in content_lower)
+                        if ttp_score >= 2:
+                            return content
+                except Exception:
+                    continue
+            
+            # Fallback to all text
+            return soup.get_text()
         
-        # Fallback to all text if nothing else works
-        return soup.get_text()
+        else:  # comprehensive
+            # Comprehensive extraction - detailed content analysis
+            return self._extract_comprehensive_content(soup)
     
     def _extract_semantic_content(self, soup: BeautifulSoup) -> str:
         """Extract from semantic HTML tags."""
@@ -276,7 +301,7 @@ class ReportParser:
         semantic_tags = ['article', 'main', 'section', 'div']
         
         for tag in semantic_tags:
-            elements = soup.find_all(tag)
+            elements = soup.find_all(tag)[:5]  # Limit for performance
             for element in elements:
                 text = element.get_text()
                 if len(text.strip()) > 100:
@@ -288,15 +313,13 @@ class ReportParser:
         """Extract based on content-related CSS classes."""
         content_selectors = [
             '.content', '.main-content', '.post-content', '.article-content',
-            '.entry-content', '.blog-content', '.text-content', '.body-content',
-            '.article-body', '.post-body', '.story-body', '.report-content',
-            '.analysis', '.intelligence', '.security-content', '.threat-content',
-            '[role="main"]', '.container', '.wrapper'
+            '.entry-content', '.blog-content', '.analysis', '.intelligence',
+            '.security-content', '.threat-content', '[role="main"]'
         ]
         
         content_parts = []
         for selector in content_selectors:
-            elements = soup.select(selector)
+            elements = soup.select(selector)[:3]  # Limit for performance
             for element in elements:
                 text = element.get_text()
                 if len(text.strip()) > 100:
@@ -309,39 +332,47 @@ class ReportParser:
         content_parts = []
         
         # Extract paragraphs
-        for p in soup.find_all('p'):
+        for p in soup.find_all('p')[:50]:  # Limit for performance
             text = p.get_text().strip()
             if len(text) > 20:
                 content_parts.append(text)
         
         # Extract list items
-        for li in soup.find_all('li'):
+        for li in soup.find_all('li')[:30]:
             text = li.get_text().strip()
             if len(text) > 30:
                 content_parts.append(text)
         
-        # Extract divs with substantial text
-        for div in soup.find_all('div'):
-            # Get direct text content
-            direct_text = ''.join(div.find_all(string=True, recursive=False)).strip()
-            if len(direct_text) > 50:
-                content_parts.append(direct_text)
-        
-        # Extract table cells (threat intel reports often use tables)
-        for td in soup.find_all(['td', 'th']):
-            text = td.get_text().strip()
-            if len(text) > 20:
-                content_parts.append(text)
-        
         return '\n'.join(content_parts)
     
-    def _extract_all_text_content(self, soup: BeautifulSoup) -> str:
-        """Fallback to extract all text content."""
+    def _extract_comprehensive_content(self, soup: BeautifulSoup) -> str:
+        """Comprehensive content extraction with all strategies."""
+        # Try multiple strategies and combine results
+        strategies = [
+            self._extract_semantic_content,
+            self._extract_class_based_content,
+            self._extract_paragraph_content,
+            self._extract_intelligence_content
+        ]
+        
+        all_content = []
+        for strategy in strategies:
+            try:
+                content = strategy(soup)
+                if content and len(content.strip()) > 100:
+                    all_content.append(content)
+            except Exception:
+                continue
+        
+        if all_content:
+            # Combine and deduplicate
+            combined = '\n'.join(all_content)
+            return self._deduplicate_content(combined)
+        
         return soup.get_text()
     
-    def _alternative_content_extraction(self, soup: BeautifulSoup) -> str:
-        """Alternative extraction for difficult pages."""
-        # Try extracting from elements that commonly contain threat intelligence
+    def _extract_intelligence_content(self, soup: BeautifulSoup) -> str:
+        """Extract content specifically relevant to threat intelligence."""
         intelligence_selectors = [
             '[class*="threat"]', '[class*="security"]', '[class*="analysis"]',
             '[class*="intelligence"]', '[class*="attack"]', '[class*="mitre"]',
@@ -356,28 +387,64 @@ class ReportParser:
                 if len(text) > 50:
                     content_parts.append(text)
         
-        if content_parts:
-            return '\n'.join(content_parts)
-        
-        # Final fallback - extract from all visible text elements
-        visible_elements = soup.find_all(['p', 'div', 'span', 'li', 'td', 'th', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
-        for elem in visible_elements:
-            text = elem.get_text().strip()
-            if len(text) > 15:
-                content_parts.append(text)
-        
         return '\n'.join(content_parts)
     
-    def _gentle_content_cleaning(self, content: str) -> str:
-        """Gentler content cleaning that preserves TTP context."""
+    def _deduplicate_content(self, content: str) -> str:
+        """Remove duplicate content while preserving structure."""
+        lines = content.split('\n')
+        seen_lines = set()
+        unique_lines = []
+        
+        for line in lines:
+            line_clean = line.strip()
+            if line_clean and line_clean not in seen_lines:
+                unique_lines.append(line)
+                seen_lines.add(line_clean)
+        
+        return '\n'.join(unique_lines)
+    
+    def _clean_content(self, content: str) -> str:
+        """Clean content with mode-appropriate thoroughness."""
         if not content:
             return ""
         
+        if self.performance_mode == 'fast':
+            # Minimal cleaning for speed
+            content = re.sub(r'\s+', ' ', content).strip()
+            return content
+        
+        elif self.performance_mode == 'balanced':
+            # Balanced cleaning
+            # Normalize whitespace
+            content = re.sub(r'\r\n', '\n', content)
+            content = re.sub(r'\r', '\n', content)
+            content = re.sub(r'\n{3,}', '\n\n', content)
+            content = re.sub(r'[ \t]+', ' ', content)
+            
+            # Remove some unwanted artifacts
+            unwanted_patterns = [
+                r'Cookie\s+Policy(?!\s+(?:analysis|security))',
+                r'Privacy\s+Policy(?!\s+(?:analysis|security))',
+                r'Follow\s+us\s+on\s+(?:Twitter|LinkedIn)',
+                r'Subscribe\s+to\s+newsletter'
+            ]
+            
+            for pattern in unwanted_patterns:
+                content = re.sub(pattern, '', content, flags=re.IGNORECASE)
+            
+            return content.strip()
+        
+        else:  # comprehensive
+            # Comprehensive cleaning with maximum preservation
+            return self._comprehensive_content_cleaning(content)
+    
+    def _comprehensive_content_cleaning(self, content: str) -> str:
+        """Comprehensive content cleaning that preserves TTP context."""
         # Normalize whitespace but preserve structure
         content = re.sub(r'\r\n', '\n', content)
         content = re.sub(r'\r', '\n', content)
-        content = re.sub(r'\n{3,}', '\n\n', content)  # Max 2 consecutive newlines
-        content = re.sub(r'[ \t]+', ' ', content)  # Normalize spaces
+        content = re.sub(r'\n{3,}', '\n\n', content)
+        content = re.sub(r'[ \t]+', ' ', content)
         
         # Remove excessive repetition but preserve TTP patterns
         lines = content.split('\n')
@@ -387,15 +454,13 @@ class ReportParser:
         for line in lines:
             line = line.strip()
             if not line:
-                if prev_line:  # Only add empty line if previous line had content
+                if prev_line:
                     cleaned_lines.append("")
                 continue
             
-            # Don't remove lines that contain TTP-relevant information
+            # Don't remove lines with TTP-relevant content
             line_lower = line.lower()
             has_ttp_content = any(keyword in line_lower for keyword in self.ttp_keywords)
-            
-            # Check for technique ID patterns
             has_technique_id = bool(re.search(r'\bT\d{4}(?:\.\d{3})?\b', line))
             
             if has_ttp_content or has_technique_id or line != prev_line:
@@ -405,29 +470,28 @@ class ReportParser:
         
         cleaned_content = '\n'.join(cleaned_lines)
         
-        # Remove only clearly unwanted artifacts, but preserve security-related content
+        # Remove unwanted artifacts but preserve security-related content
         artifacts_to_remove = [
-            r'Cookie\s+Policy(?!\s+(?:analysis|security|threat))',  # Keep if followed by security terms
+            r'Cookie\s+Policy(?!\s+(?:analysis|security|threat))',
             r'Privacy\s+Policy(?!\s+(?:analysis|security|threat))',
             r'Terms\s+of\s+Service(?!\s+(?:analysis|security|threat))',
             r'Follow\s+us\s+on\s+(?:Twitter|LinkedIn|Facebook)',
             r'Subscribe\s+to\s+(?:our\s+)?newsletter',
-            r'Advertisement(?!\s+(?:analysis|vector|campaign))',  # Keep if security-related
+            r'Advertisement(?!\s+(?:analysis|vector|campaign))',
             r'Sponsored\s+Content(?!\s+(?:analysis|by\s+security))'
         ]
         
         for artifact_pattern in artifacts_to_remove:
             cleaned_content = re.sub(artifact_pattern, '', cleaned_content, flags=re.IGNORECASE)
         
-        # Clean up URLs but preserve those that might be relevant
-        # Keep security-related domains
+        # Clean URLs but preserve security-related ones
         security_domains = ['mitre.org', 'cisa.gov', 'nist.gov', 'attack.mitre.org', 'cve.mitre.org']
         
         def url_replacer(match):
             url = match.group(0)
             if any(domain in url.lower() for domain in security_domains):
-                return url  # Keep security-related URLs
-            return ''  # Remove other URLs
+                return url
+            return ''
         
         cleaned_content = re.sub(r'https?://\S+', url_replacer, cleaned_content)
         
@@ -437,29 +501,42 @@ class ReportParser:
         
         return cleaned_content.strip()
     
-    def _extract_date_enhanced(self, html_content: str, soup: BeautifulSoup) -> Optional[str]:
-        """Enhanced date extraction with multiple strategies."""
-        # Strategy 1: Structured data (JSON-LD)
+    def _extract_date_simple(self, content: str) -> Optional[str]:
+        """Simple date extraction for fast/balanced modes."""
+        # Look for ISO format dates
+        iso_pattern = r'\b(\d{4}-\d{1,2}-\d{1,2})\b'
+        matches = re.findall(iso_pattern, content)
+        
+        if matches:
+            for date_str in matches:
+                try:
+                    dt = datetime.strptime(date_str, '%Y-%m-%d')
+                    if 1990 <= dt.year <= 2030:
+                        return dt.date().isoformat()
+                except ValueError:
+                    continue
+        
+        return None
+    
+    def _extract_date_comprehensive(self, html_content: str, soup: BeautifulSoup) -> Optional[str]:
+        """Comprehensive date extraction with multiple strategies."""
+        # Try structured data first
         date = self._extract_structured_date(soup)
         if date:
             return date
         
-        # Strategy 2: Meta tags
+        # Try meta tags
         date = self._extract_meta_date(soup)
         if date:
             return date
         
-        # Strategy 3: Time elements
+        # Try time elements
         date = self._extract_time_elements(soup)
         if date:
             return date
         
-        # Strategy 4: Text patterns in content
-        date = self._extract_date_from_text(html_content)
-        if date:
-            return date
-        
-        return None
+        # Fall back to text patterns
+        return self._extract_date_from_text(html_content)
     
     def _extract_structured_date(self, soup: BeautifulSoup) -> Optional[str]:
         """Extract date from JSON-LD structured data."""
@@ -469,15 +546,14 @@ class ReportParser:
                 import json
                 data = json.loads(script.string)
                 
-                # Handle both single objects and arrays
                 if isinstance(data, list):
                     data = data[0] if data else {}
                 
-                date_fields = ['datePublished', 'dateCreated', 'dateModified', 'publishedDate']
+                date_fields = ['datePublished', 'dateCreated', 'dateModified']
                 for field in date_fields:
                     if field in data:
                         return self._parse_date_string(data[field])
-            except (json.JSONDecodeError, TypeError):
+            except:
                 continue
         
         return None
@@ -486,25 +562,15 @@ class ReportParser:
         """Extract date from meta tags."""
         meta_selectors = [
             ('meta', {'property': 'article:published_time'}),
-            ('meta', {'property': 'article:modified_time'}),
             ('meta', {'name': 'pubdate'}),
             ('meta', {'name': 'date'}),
-            ('meta', {'name': 'publish_date'}),
-            ('meta', {'property': 'og:published_time'}),
-            ('meta', {'name': 'DC.date.created'}),
-            ('meta', {'name': 'dc.date'}),
-            ('meta', {'name': 'citation_publication_date'}),
-            ('meta', {'property': 'twitter:data1'})  # Sometimes used for dates
+            ('meta', {'property': 'og:published_time'})
         ]
         
         for tag_name, attrs in meta_selectors:
             element = soup.find(tag_name, attrs)
-            if element:
-                date_value = element.get('content') or element.get('datetime')
-                if date_value:
-                    parsed_date = self._parse_date_string(date_value)
-                    if parsed_date:
-                        return parsed_date
+            if element and element.get('content'):
+                return self._parse_date_string(element['content'])
         
         return None
     
@@ -514,36 +580,16 @@ class ReportParser:
         for time_elem in time_elements:
             datetime_attr = time_elem.get('datetime')
             if datetime_attr:
-                parsed_date = self._parse_date_string(datetime_attr)
-                if parsed_date:
-                    return parsed_date
-            
-            # Try parsing the text content of time elements
-            time_text = time_elem.get_text().strip()
-            if time_text:
-                parsed_date = self._parse_date_string(time_text)
-                if parsed_date:
-                    return parsed_date
+                return self._parse_date_string(datetime_attr)
         
         return None
     
     def _extract_date_from_text(self, content: str) -> Optional[str]:
         """Extract date from text content using patterns."""
-        # Enhanced date patterns
         date_patterns = [
-            # ISO format
             r'\b(\d{4}-\d{1,2}-\d{1,2})\b',
-            # US format
             r'\b(\d{1,2}[-/]\d{1,2}[-/]\d{4})\b',
-            # Full month names
-            r'\b((?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4})\b',
-            # Abbreviated month names
-            r'\b((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+\d{1,2},?\s+\d{4})\b',
-            # Day month year
-            r'\b(\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4})\b',
-            # Published/Updated patterns
-            r'(?:Published|Updated|Created|Modified)\s*:?\s*([A-Za-z]+\s+\d{1,2},?\s+\d{4})',
-            r'(?:Published|Updated|Created|Modified)\s*:?\s*(\d{1,2}[-/]\d{1,2}[-/]\d{4})'
+            r'\b((?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4})\b'
         ]
         
         for pattern in date_patterns:
@@ -564,40 +610,28 @@ class ReportParser:
         
         date_str = date_str.strip()
         
-        # Handle ISO format dates with timezone
+        # Handle ISO format with timezone
         if 'T' in date_str:
             try:
-                # Remove timezone info for parsing
                 if date_str.endswith('Z'):
                     date_str = date_str[:-1]
                 elif '+' in date_str:
                     date_str = date_str.split('+')[0]
-                elif date_str.count('-') > 2:  # Has timezone offset
-                    parts = date_str.rsplit('-', 1)
-                    if ':' in parts[1]:  # Likely timezone
-                        date_str = parts[0]
                 
                 dt = datetime.fromisoformat(date_str)
                 return dt.date().isoformat()
             except:
                 pass
         
-        # Try various date formats
+        # Try various formats
         date_formats = [
-            '%Y-%m-%d',
-            '%m/%d/%Y', '%d/%m/%Y',
-            '%m-%d-%Y', '%d-%m-%Y',
-            '%B %d, %Y', '%b %d, %Y',
-            '%d %B %Y', '%d %b %Y',
-            '%B %d %Y', '%b %d %Y',
-            '%Y/%m/%d', '%d.%m.%Y', '%m.%d.%Y',
-            '%d-%b-%Y', '%d-%B-%Y'
+            '%Y-%m-%d', '%m/%d/%Y', '%d/%m/%Y',
+            '%B %d, %Y', '%b %d, %Y', '%d %B %Y'
         ]
         
         for fmt in date_formats:
             try:
                 dt = datetime.strptime(date_str, fmt)
-                # Reasonable year range check
                 if 1990 <= dt.year <= 2030:
                     return dt.date().isoformat()
             except ValueError:
@@ -606,7 +640,7 @@ class ReportParser:
         return None
     
     def _parse_pdf_content(self, pdf_content: bytes, source: str) -> Dict:
-        """Enhanced PDF parsing with better text extraction."""
+        """Parse PDF content with mode-appropriate processing."""
         if not PDF_SUPPORT:
             raise ImportError("PyPDF2 not available for PDF parsing")
         
@@ -614,53 +648,53 @@ class ReportParser:
             from io import BytesIO
             pdf_reader = PyPDF2.PdfReader(BytesIO(pdf_content))
             
-            # Extract text from all pages with better handling
+            # Extract text from all pages
             text_content = ""
             page_count = len(pdf_reader.pages)
             
-            for i, page in enumerate(pdf_reader.pages):
+            # Limit pages in fast mode for speed
+            max_pages = page_count if self.performance_mode != 'fast' else min(page_count, 20)
+            
+            for i, page in enumerate(pdf_reader.pages[:max_pages]):
                 try:
                     page_text = page.extract_text()
                     if page_text:
-                        # Basic text cleaning for PDFs
-                        page_text = re.sub(r'\s+', ' ', page_text)
                         text_content += page_text + "\n"
                 except Exception as e:
                     self.logger.debug(f"Failed to extract text from PDF page {i}: {e}")
                     continue
             
-            # Extract metadata for title and date
+            # Extract metadata
             title = ""
             creation_date = None
             
-            if pdf_reader.metadata:
-                title = (pdf_reader.metadata.get('/Title') or 
-                        pdf_reader.metadata.get('/Subject') or "").strip()
+            if pdf_reader.metadata and self.performance_mode != 'fast':
+                title = (pdf_reader.metadata.get('/Title') or "").strip()
                 
-                # Try to get creation date
-                creation_date_obj = pdf_reader.metadata.get('/CreationDate')
-                if creation_date_obj:
-                    try:
-                        # PDF dates are in D:YYYYMMDDHHmmSSOHH'mm format
-                        date_str = str(creation_date_obj)
-                        if date_str.startswith("D:"):
-                            date_str = date_str[2:10]  # Extract YYYYMMDD
-                            if len(date_str) == 8:
-                                dt = datetime.strptime(date_str, '%Y%m%d')
-                                creation_date = dt.date().isoformat()
-                    except:
-                        pass
+                # Extract creation date in comprehensive mode
+                if self.performance_mode == 'comprehensive':
+                    creation_date_obj = pdf_reader.metadata.get('/CreationDate')
+                    if creation_date_obj:
+                        try:
+                            date_str = str(creation_date_obj)
+                            if date_str.startswith("D:"):
+                                date_str = date_str[2:10]
+                                if len(date_str) == 8:
+                                    dt = datetime.strptime(date_str, '%Y%m%d')
+                                    creation_date = dt.date().isoformat()
+                        except:
+                            pass
             
-            # If no title from metadata, extract from content
+            # Extract title from content if not from metadata
             if not title and text_content:
                 lines = [line.strip() for line in text_content.split('\n') if line.strip()]
-                for line in lines[:10]:  # Check first 10 lines
-                    if 5 < len(line) < 150:  # Reasonable title length
+                for line in lines[:10]:
+                    if 5 < len(line) < 150:
                         title = line
                         break
             
-            # Gentle cleaning for PDFs
-            cleaned_content = self._gentle_content_cleaning(text_content)
+            # Clean content based on mode
+            cleaned_content = self._clean_content(text_content)
             
             result = {
                 'source': source,
@@ -670,7 +704,9 @@ class ReportParser:
                 'content_type': 'pdf',
                 'content_length': len(cleaned_content),
                 'page_count': page_count,
-                'parsed_at': datetime.utcnow().isoformat()
+                'pages_processed': max_pages,
+                'parsed_at': datetime.utcnow().isoformat(),
+                'parser_mode': self.performance_mode
             }
             
             self.logger.debug(f"Extracted {len(cleaned_content)} characters from PDF")
@@ -681,7 +717,7 @@ class ReportParser:
             raise
     
     def _parse_raw_content(self, content: str, source: str = "raw") -> Dict:
-        """Parse raw text content with enhanced cleaning."""
+        """Parse raw text content with mode-appropriate processing."""
         lines = [line.strip() for line in content.split('\n') if line.strip()]
         
         # Extract title from first meaningful line
@@ -691,29 +727,34 @@ class ReportParser:
                 title = line
                 break
         
-        # Apply gentle cleaning
-        cleaned_content = self._gentle_content_cleaning(content)
+        # Clean content
+        cleaned_content = self._clean_content(content)
+        
+        # Extract date only in balanced/comprehensive modes
+        pub_date = None
+        if self.performance_mode != 'fast':
+            pub_date = self._extract_date_simple(content)
         
         result = {
             'source': source,
             'title': title,
             'content': cleaned_content,
-            'publication_date': self._extract_date_from_text(content),
+            'publication_date': pub_date,
             'content_type': 'text',
             'content_length': len(cleaned_content),
-            'parsed_at': datetime.utcnow().isoformat()
+            'parsed_at': datetime.utcnow().isoformat(),
+            'parser_mode': self.performance_mode
         }
         
         return result
     
     def _rate_limit(self):
-        """Implement rate limiting for web requests."""
+        """Rate limiting for web requests."""
         current_time = time.time()
         time_since_last = current_time - self.last_request_time
         
         if time_since_last < self.config.RATE_LIMIT_DELAY:
             sleep_time = self.config.RATE_LIMIT_DELAY - time_since_last
-            self.logger.debug(f"Rate limiting: sleeping for {sleep_time:.2f} seconds")
             time.sleep(sleep_time)
         
         self.last_request_time = time.time()

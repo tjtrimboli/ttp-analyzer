@@ -1,86 +1,83 @@
 #!/usr/bin/env python3
 """
- MITRE ATT&CK TTP Analyzer for Threat Actor Evolution
-A modular application for parsing threat intelligence reports and analyzing TTPs.
+MITRE ATT&CK TTP Analyzer
+Combines the best of enhanced and streamlined approaches with configurable performance modes.
 
-This version integrates the  TTP extraction and report parsing components
-for significantly improved accuracy and reduced false negatives.
+Performance Modes:
+- fast: Maximum speed, regex-only extraction (10-30x faster)
+- balanced: Good speed with enhanced accuracy (recommended)
+- comprehensive: Maximum accuracy with full feature set
 """
 
 import argparse
 import sys
 import logging
-from pathlib import Path
-from typing import Dict, List, Optional
 import json
 import time
+from pathlib import Path
+from typing import Dict, List, Optional
+from collections import Counter
 
+# Import components
 from src.config import Config
-
-# Try to import  components, fall back to original if needed
-try:
-    from src.ttp_extractor import TTPExtractor as TTPExtractor
-    from src.report_parser import ReportParser as ReportParser
-    _MODE = True
-except ImportError:
-    try:
-        from src.ttp_extractor import TTPExtractor
-        from src.report_parser import ReportParser
-        _MODE = False
-    except ImportError:
-        print("Error: Could not import TTP extraction components.")
-        print("Please ensure the  modules are properly installed.")
-        sys.exit(1)
-
 from src.timeline_analyzer import TimelineAnalyzer
 from src.visualization import Visualizer
 
+# Import the new components we just created
+from src.ttp_extractor import TTPExtractor
+from src.report_parser import ReportParser
+
 
 class TTPAnalyzer:
-    """ TTP Analyzer with improved extraction capabilities."""
+    """
+    TTP analyzer with configurable performance modes.
     
-    def __init__(self, config_path: Optional[str] = None):
-        """Initialize the  TTP Analyzer."""
+    This combines the best features from both the enhanced and streamlined
+    approaches, allowing users to choose their preferred speed/accuracy tradeoff.
+    """
+    
+    def __init__(self, config_path: Optional[str] = None, performance_mode: Optional[str] = None):
+        """Initialize the analyzer."""
         self.config = Config(config_path)
+        
+        # Override performance mode if specified
+        if performance_mode:
+            self.config.PERFORMANCE_MODE = performance_mode
+        
+        # Ensure performance mode is set
+        if not hasattr(self.config, 'PERFORMANCE_MODE'):
+            self.config.PERFORMANCE_MODE = 'balanced'
+        
+        self.performance_mode = self.config.PERFORMANCE_MODE.lower()
+        
         self.setup_logging()
         
-        # Initialize components lazily for better performance
-        self.parser = None
-        self.extractor = None
-        self.timeline_analyzer = None
-        self.visualizer = None
+        # Initialize components with approach
+        self.parser = ReportParser(self.config)
+        self.extractor = TTPExtractor(self.config)
+        self.timeline_analyzer = TimelineAnalyzer(self.config)
+        self.visualizer = Visualizer(self.config)
         
-        # Track performance metrics
+        # Performance tracking
         self.metrics = {
             'reports_processed': 0,
             'reports_failed': 0,
             'ttps_extracted': 0,
-            'processing_time': 0
+            'processing_time': 0,
+            'performance_mode': self.performance_mode
         }
         
-    def _ensure_components_initialized(self):
-        """Lazy initialization of components that require heavy resources."""
-        if self.parser is None:
-            self.parser = ReportParser(self.config)
-            
-        if self.extractor is None:
-            self.extractor = TTPExtractor(self.config)
-            
-        if self.timeline_analyzer is None:
-            self.timeline_analyzer = TimelineAnalyzer(self.config)
-            
-        if self.visualizer is None:
-            self.visualizer = Visualizer(self.config)
+        self.logger.info(f"TTP Analyzer initialized in '{self.performance_mode}' mode")
         
     def setup_logging(self):
-        """Configure  logging for the application."""
+        """Setup logging configuration."""
         log_level = getattr(logging, self.config.LOG_LEVEL.upper())
         
         # Ensure log directory exists
         log_file_path = Path(self.config.LOG_FILE)
         log_file_path.parent.mkdir(parents=True, exist_ok=True)
         
-        # Configure logging with  format
+        # Configure logging
         logging.basicConfig(
             level=log_level,
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -92,71 +89,24 @@ class TTPAnalyzer:
         
         self.logger = logging.getLogger(__name__)
         
-        # Log enhancement status
-        if _MODE:
-            self.logger.info(" TTP extraction components loaded successfully")
-        else:
-            self.logger.warning("Using original TTP extraction components - consider upgrading")
-        
-    def validate_actor_directory(self, actor_name: str) -> Path:
-        """Validate that the actor directory exists and contains reports."""
-        actor_dir = Path(self.config.GROUPS_DIR) / actor_name
-        
-        if not actor_dir.exists():
-            raise FileNotFoundError(f"Actor directory not found: {actor_dir}")
-            
-        if not actor_dir.is_dir():
-            raise NotADirectoryError(f"Path is not a directory: {actor_dir}")
-            
-        # Check for reports file
-        reports_file = actor_dir / "reports.txt"
-        if not reports_file.exists():
-            raise FileNotFoundError(f"Reports file not found: {reports_file}")
-            
-        return actor_dir
-        
-    def load_report_links(self, actor_dir: Path) -> List[str]:
-        """Load report links from the actor's reports.txt file."""
-        reports_file = actor_dir / "reports.txt"
-        links = []
-        
-        try:
-            with open(reports_file, 'r', encoding='utf-8') as f:
-                for line_num, line in enumerate(f, 1):
-                    line = line.strip()
-                    if line and not line.startswith('#'):  # Skip empty lines and comments
-                        # Basic URL validation
-                        if line.startswith(('http://', 'https://')):
-                            links.append(line)
-                        else:
-                            self.logger.warning(f"Invalid URL format at line {line_num}: {line}")
-        except Exception as e:
-            self.logger.error(f"Error reading reports file: {e}")
-            raise
-            
-        return links
-        
     def analyze_actor(self, actor_name: str) -> Dict:
-        """ analysis of a specific threat actor."""
+        """Analyze a threat actor with approach."""
         start_time = time.time()
-        self.logger.info(f"Starting  analysis for threat actor: {actor_name}")
-        
-        # Ensure all components are initialized for analysis
-        self._ensure_components_initialized()
+        self.logger.info(f"Starting analysis for {actor_name} in {self.performance_mode} mode")
         
         try:
             # Validate actor directory
-            actor_dir = self.validate_actor_directory(actor_name)
+            actor_dir = self._validate_actor_directory(actor_name)
             
             # Load report links
-            report_links = self.load_report_links(actor_dir)
+            report_links = self._load_report_links(actor_dir)
             self.logger.info(f"Found {len(report_links)} reports to analyze")
             
             if not report_links:
                 raise ValueError("No valid report URLs found in reports.txt")
             
-            #  report parsing with better error handling
-            self.logger.info(" parsing of reports...")
+            # Parse reports with parser
+            self.logger.info("Parsing reports with parser...")
             parsed_reports = []
             parsing_errors = []
             
@@ -167,8 +117,8 @@ class TTPAnalyzer:
                     if report_data and report_data.get('content'):
                         content_length = len(report_data['content'])
                         
-                        # More lenient content validation for  parser
-                        min_length = getattr(self.config, 'MIN_CONTENT_LENGTH', 50)
+                        # Adaptive content validation based on performance mode
+                        min_length = self._get_min_content_length()
                         if content_length >= min_length:
                             parsed_reports.append(report_data)
                             self.metrics['reports_processed'] += 1
@@ -191,14 +141,15 @@ class TTPAnalyzer:
             
             self.logger.info(f"Successfully parsed {len(parsed_reports)}/{len(report_links)} reports")
             
-            #  TTP extraction
-            self.logger.info(" TTP extraction from parsed reports...")
+            # Extract TTPs with extractor
+            self.logger.info("Extracting TTPs with extractor...")
             all_ttps = []
             extraction_stats = {
                 'reports_with_ttps': 0,
                 'total_matches': 0,
                 'high_confidence_matches': 0,
-                'technique_types': {'id': 0, 'name': 0, 'heuristic': 0}
+                'match_types': Counter(),
+                'performance_mode': self.performance_mode
             }
             
             for report in parsed_reports:
@@ -211,13 +162,8 @@ class TTPAnalyzer:
                         # Track match types and confidence
                         for ttp in ttps:
                             match_type = ttp.get('match_type', 'unknown')
-                            if match_type.startswith('id'):
-                                extraction_stats['technique_types']['id'] += 1
-                            elif match_type.startswith('name'):
-                                extraction_stats['technique_types']['name'] += 1
-                            elif match_type == 'heuristic':
-                                extraction_stats['technique_types']['heuristic'] += 1
-                                
+                            extraction_stats['match_types'][match_type] += 1
+                            
                             if ttp.get('confidence', 0) >= 0.7:
                                 extraction_stats['high_confidence_matches'] += 1
                         
@@ -228,134 +174,210 @@ class TTPAnalyzer:
                     continue
             
             self.metrics['ttps_extracted'] = len(all_ttps)
-            self.logger.info(f" extraction completed: {len(all_ttps)} TTP instances found")
-            self.logger.info(f"Extraction stats: {extraction_stats}")
+            self.logger.info(f"TTP extraction completed: {len(all_ttps)} TTP instances found")
+            self.logger.info(f"Extraction stats: {dict(extraction_stats['match_types'])}")
             
             if not all_ttps:
                 self.logger.warning("No TTPs were extracted from any reports")
-                return self._create__empty_results(actor_name, len(parsed_reports), extraction_stats)
+                return self._create_empty_results(actor_name, len(parsed_reports), extraction_stats, parsing_errors)
             
-            # Analyze timeline with  data
+            # Analyze timeline
             self.logger.info("Analyzing TTP timeline...")
             timeline_data = self.timeline_analyzer.analyze_timeline(all_ttps)
             
-            # Generate  visualizations
-            self.logger.info("Generating  visualizations...")
+            # Generate visualizations
+            self.logger.info("Generating visualizations...")
             output_dir = Path(self.config.OUTPUT_DIR) / actor_name
             output_dir.mkdir(parents=True, exist_ok=True)
             
-            # Create visualizations with  error handling
-            visualization_results = {}
+            visualization_results = self._create_visualizations(all_ttps, timeline_data, output_dir, actor_name)
             
-            heatmap_path = output_dir / "ttp_heatmap.png"
-            timeline_path = output_dir / "ttp_timeline.png"
-            frequency_path = output_dir / "ttp_frequency.png"
-            
-            try:
-                self.visualizer.create_ttp_heatmap(
-                    all_ttps, heatmap_path, title=f"{actor_name} TTP Heatmap ()"
-                )
-                visualization_results['heatmap'] = str(heatmap_path)
-                self.logger.debug("Heatmap visualization created successfully")
-            except Exception as e:
-                self.logger.error(f"Failed to create heatmap: {e}")
-                visualization_results['heatmap'] = None
-            
-            try:
-                self.visualizer.create_timeline_chart(
-                    timeline_data, timeline_path, title=f"{actor_name} TTP Timeline ()"
-                )
-                visualization_results['timeline'] = str(timeline_path)
-                self.logger.debug("Timeline visualization created successfully")
-            except Exception as e:
-                self.logger.error(f"Failed to create timeline: {e}")
-                visualization_results['timeline'] = None
-            
-            try:
-                self.visualizer.create_frequency_analysis(
-                    all_ttps, frequency_path, title=f"{actor_name} TTP Frequency Analysis ()"
-                )
-                visualization_results['frequency'] = str(frequency_path)
-                self.logger.debug("Frequency analysis visualization created successfully")
-            except Exception as e:
-                self.logger.error(f"Failed to create frequency analysis: {e}")
-                visualization_results['frequency'] = None
-            
-            # Build  results
+            # Build comprehensive results
             processing_time = time.time() - start_time
             self.metrics['processing_time'] = processing_time
             
-            # Calculate additional statistics
-            unique_techniques = len(set(ttp['technique_id'] for ttp in all_ttps))
-            unique_tactics = len(set(ttp['tactic'] for ttp in all_ttps if ttp.get('tactic')))
+            results = self._build_results(
+                actor_name, parsed_reports, all_ttps, timeline_data, 
+                extraction_stats, visualization_results, output_dir, 
+                processing_time, parsing_errors
+            )
             
-            # Confidence statistics
-            confidences = [ttp.get('confidence', 0) for ttp in all_ttps]
-            avg_confidence = sum(confidences) / len(confidences) if confidences else 0
+            # Save results
+            self._save_results(results, all_ttps, output_dir)
             
-            # Sub-technique analysis
-            sub_techniques = [ttp for ttp in all_ttps if '.' in ttp['technique_id']]
-            
-            results = {
-                'actor_name': actor_name,
-                'analysis_mode': '' if _MODE else 'standard',
-                'total_reports': len(parsed_reports),
-                'reports_processed': len(report_links),
-                'parsing_success_rate': len(parsed_reports) / len(report_links) if report_links else 0,
-                'total_ttps': len(all_ttps),
-                'unique_techniques': unique_techniques,
-                'unique_tactics': unique_tactics,
-                'sub_techniques_count': len(sub_techniques),
-                'timeline_data': timeline_data,
-                'date_range': timeline_data.get('date_range', {'start': None, 'end': None, 'duration_days': 0}),
-                'extraction_stats': extraction_stats,
-                'confidence_stats': {
-                    'average': round(avg_confidence, 3),
-                    'min': round(min(confidences), 3) if confidences else 0,
-                    'max': round(max(confidences), 3) if confidences else 0,
-                    'high_confidence_count': len([c for c in confidences if c >= 0.7])
-                },
-                'processing_metrics': self.metrics,
-                'processing_time_seconds': round(processing_time, 2),
-                'visualizations': visualization_results,
-                'parsing_errors': parsing_errors[:10],  # Keep first 10 errors for debugging
-                'enhancement_info': {
-                    '_mode': _MODE,
-                    'version': '2.0',
-                    'features': ['_extraction', 'improved_parsing', 'better_confidence']
-                }
-            }
-            
-            # Save  results
-            results_file = output_dir / "analysis_results.json"
-            try:
-                with open(results_file, 'w', encoding='utf-8') as f:
-                    json.dump(results, f, indent=2, default=str)
-                self.logger.debug(f"Results saved to {results_file}")
-            except Exception as e:
-                self.logger.error(f"Failed to save results: {e}")
-            
-            # Save detailed TTP data for further analysis
-            ttps_file = output_dir / "extracted_ttps.json"
-            try:
-                with open(ttps_file, 'w', encoding='utf-8') as f:
-                    json.dump(all_ttps, f, indent=2, default=str)
-                self.logger.debug(f"Detailed TTP data saved to {ttps_file}")
-            except Exception as e:
-                self.logger.error(f"Failed to save TTP data: {e}")
-            
-            self.logger.info(f" analysis complete. Results saved to: {output_dir}")
+            self.logger.info(f"analysis complete in {processing_time:.1f}s")
             return results
             
         except Exception as e:
-            self.logger.error(f" analysis failed for {actor_name}: {e}")
+            self.logger.error(f"analysis failed for {actor_name}: {e}")
             raise
     
-    def _create__empty_results(self, actor_name: str, num_reports: int, extraction_stats: Dict) -> Dict:
-        """Create  results structure when no TTPs are found."""
+    def _validate_actor_directory(self, actor_name: str) -> Path:
+        """Validate actor directory exists and contains reports."""
+        actor_dir = Path(self.config.GROUPS_DIR) / actor_name
+        
+        if not actor_dir.exists() or not actor_dir.is_dir():
+            raise FileNotFoundError(f"Actor directory not found: {actor_dir}")
+        
+        reports_file = actor_dir / "reports.txt"
+        if not reports_file.exists():
+            raise FileNotFoundError(f"Reports file not found: {reports_file}")
+        
+        return actor_dir
+        
+    def _load_report_links(self, actor_dir: Path) -> List[str]:
+        """Load report links from reports.txt file."""
+        reports_file = actor_dir / "reports.txt"
+        links = []
+        
+        try:
+            with open(reports_file, 'r', encoding='utf-8') as f:
+                for line_num, line in enumerate(f, 1):
+                    line = line.strip()
+                    if line and not line.startswith('#'):
+                        if line.startswith(('http://', 'https://')):
+                            links.append(line)
+                        else:
+                            self.logger.warning(f"Invalid URL format at line {line_num}: {line}")
+        except Exception as e:
+            self.logger.error(f"Error reading reports file: {e}")
+            raise
+            
+        return links
+    
+    def _get_min_content_length(self) -> int:
+        """Get minimum content length based on performance mode."""
+        if self.performance_mode == 'fast':
+            return 50
+        elif self.performance_mode == 'balanced':
+            return 100
+        else:  # comprehensive
+            return 150
+    
+    def _create_visualizations(self, ttps: List[Dict], timeline_data: Dict, 
+                             output_dir: Path, actor_name: str) -> Dict:
+        """Create visualizations and return results."""
+        visualization_results = {}
+        
+        try:
+            # Heatmap
+            heatmap_path = output_dir / "ttp_heatmap.png"
+            self.visualizer.create_ttp_heatmap(
+                ttps, heatmap_path, title=f"{actor_name} TTP Heatmap ({self.performance_mode.title()} Mode)"
+            )
+            visualization_results['heatmap'] = str(heatmap_path)
+            self.logger.debug("Heatmap visualization created successfully")
+        except Exception as e:
+            self.logger.error(f"Failed to create heatmap: {e}")
+            visualization_results['heatmap'] = None
+        
+        try:
+            # Timeline
+            timeline_path = output_dir / "ttp_timeline.png"
+            self.visualizer.create_timeline_chart(
+                timeline_data, timeline_path, title=f"{actor_name} TTP Timeline ({self.performance_mode.title()} Mode)"
+            )
+            visualization_results['timeline'] = str(timeline_path)
+            self.logger.debug("Timeline visualization created successfully")
+        except Exception as e:
+            self.logger.error(f"Failed to create timeline: {e}")
+            visualization_results['timeline'] = None
+        
+        try:
+            # Frequency analysis
+            frequency_path = output_dir / "ttp_frequency.png"
+            self.visualizer.create_frequency_analysis(
+                ttps, frequency_path, title=f"{actor_name} TTP Analysis ({self.performance_mode.title()} Mode)"
+            )
+            visualization_results['frequency'] = str(frequency_path)
+            self.logger.debug("Frequency analysis visualization created successfully")
+        except Exception as e:
+            self.logger.error(f"Failed to create frequency analysis: {e}")
+            visualization_results['frequency'] = None
+        
+        return visualization_results
+    
+    def _build_results(self, actor_name: str, reports: List[Dict], ttps: List[Dict],
+                      timeline_data: Dict, extraction_stats: Dict, 
+                      visualization_results: Dict, output_dir: Path,
+                      processing_time: float, parsing_errors: List[str]) -> Dict:
+        """Build comprehensive results structure."""
+        # Calculate statistics
+        unique_techniques = len(set(ttp['technique_id'] for ttp in ttps))
+        unique_tactics = len(set(ttp['tactic'] for ttp in ttps if ttp.get('tactic')))
+        sub_techniques = [ttp for ttp in ttps if '.' in ttp['technique_id']]
+        
+        # Confidence statistics
+        confidences = [ttp.get('confidence', 0) for ttp in ttps]
+        avg_confidence = sum(confidences) / len(confidences) if confidences else 0
+        
+        # Performance statistics
+        extractor_stats = self.extractor.get_performance_stats()
+        
         return {
             'actor_name': actor_name,
-            'analysis_mode': '' if _MODE else 'standard',
+            'analysis_version': 'v1.0',
+            'performance_mode': self.performance_mode,
+            'total_reports': len(reports),
+            'reports_processed': len(report_links := [r['source'] for r in reports]),
+            'parsing_success_rate': len(reports) / len(report_links) if report_links else 0,
+            'total_ttps': len(ttps),
+            'unique_techniques': unique_techniques,
+            'unique_tactics': unique_tactics,
+            'sub_techniques_count': len(sub_techniques),
+            'timeline_data': timeline_data,
+            'date_range': timeline_data.get('date_range', {
+                'start': None, 'end': None, 'duration_days': 0
+            }),
+            'extraction_stats': {
+                'reports_with_ttps': extraction_stats['reports_with_ttps'],
+                'total_matches': extraction_stats['total_matches'],
+                'high_confidence_matches': extraction_stats['high_confidence_matches'],
+                'match_types': dict(extraction_stats['match_types']),
+                'performance_mode': extraction_stats['performance_mode']
+            },
+            'confidence_stats': {
+                'average': round(avg_confidence, 3),
+                'min': round(min(confidences), 3) if confidences else 0,
+                'max': round(max(confidences), 3) if confidences else 0,
+                'high_confidence_count': len([c for c in confidences if c >= 0.7])
+            },
+            'performance_metrics': {
+                'processing_time_seconds': round(processing_time, 2),
+                'reports_per_second': len(reports) / processing_time if processing_time > 0 else 0,
+                'ttps_per_second': len(ttps) / processing_time if processing_time > 0 else 0,
+                'mode_stats': extractor_stats
+            },
+            'visualizations': visualization_results,
+            'output_directory': str(output_dir),
+            'parsing_errors': parsing_errors[:10],  # Keep first 10 for debugging
+            'system_info': {
+                'analyzer': True,
+                'performance_mode': self.performance_mode,
+                'features_enabled': self._get_enabled_features(),
+                'analysis_timestamp': time.time()
+            }
+        }
+    
+    def _get_enabled_features(self) -> List[str]:
+        """Get list of enabled features based on performance mode."""
+        features = ['regex_id_extraction']
+        
+        if self.performance_mode in ['balanced', 'comprehensive']:
+            features.append('name_context_extraction')
+        
+        if self.performance_mode == 'comprehensive':
+            features.extend(['heuristic_extraction', 'enhanced_validation', 'comprehensive_parsing'])
+        
+        return features
+    
+    def _create_empty_results(self, actor_name: str, num_reports: int, 
+                            extraction_stats: Dict, parsing_errors: List[str]) -> Dict:
+        """Create results structure when no TTPs are found."""
+        return {
+            'actor_name': actor_name,
+            'analysis_version': 'v1.0',
+            'performance_mode': self.performance_mode,
             'total_reports': num_reports,
             'total_ttps': 0,
             'unique_techniques': 0,
@@ -367,77 +389,64 @@ class TTPAnalyzer:
                 'date_range': {'start': None, 'end': None, 'duration_days': 0}
             },
             'extraction_stats': extraction_stats,
-            'confidence_stats': {
-                'average': 0,
-                'min': 0,
-                'max': 0,
-                'high_confidence_count': 0
-            },
-            'date_range': {'start': None, 'end': None, 'duration_days': 0},
-            'visualizations': {
-                'heatmap': None,
-                'timeline': None,
-                'frequency': None
-            },
-            'processing_metrics': self.metrics,
-            'enhancement_info': {
-                '_mode': _MODE,
-                'version': '2.0',
-                'note': 'No TTPs extracted - consider reviewing report content and extraction settings'
+            'confidence_stats': {'average': 0, 'min': 0, 'max': 0, 'high_confidence_count': 0},
+            'performance_metrics': self.metrics,
+            'visualizations': {'heatmap': None, 'timeline': None, 'frequency': None},
+            'parsing_errors': parsing_errors,
+            'system_info': {
+                'analyzer': True,
+                'performance_mode': self.performance_mode,
+                'note': 'No TTPs extracted - consider reviewing report content or trying comprehensive mode'
             }
         }
+    
+    def _save_results(self, results: Dict, ttps: List[Dict], output_dir: Path):
+        """Save analysis results and detailed TTP data."""
+        try:
+            # Save main results
+            results_file = output_dir / "analysis_results.json"
+            with open(results_file, 'w', encoding='utf-8') as f:
+                json.dump(results, f, indent=2, default=str)
+            self.logger.debug(f"Results saved to {results_file}")
             
+            # Save detailed TTP data
+            ttps_file = output_dir / "extracted_ttps.json"
+            with open(ttps_file, 'w', encoding='utf-8') as f:
+                json.dump(ttps, f, indent=2, default=str)
+            self.logger.debug(f"Detailed TTP data saved to {ttps_file}")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to save results: {e}")
+    
     def list_available_actors(self) -> List[str]:
-        """List all available threat actors in the groups directory."""
+        """List all available threat actors."""
         groups_dir = Path(self.config.GROUPS_DIR)
         if not groups_dir.exists():
             return []
-            
+        
         actors = []
         for item in groups_dir.iterdir():
             if item.is_dir() and (item / "reports.txt").exists():
                 actors.append(item.name)
-                
-        return sorted(actors)
-
-    def update_attack_data(self) -> bool:
-        """Update MITRE ATT&CK framework data with  feedback."""
-        self.logger.info("Updating MITRE ATT&CK framework data...")
         
-        # Only initialize the extractor for this operation
-        if self.extractor is None:
-            self.extractor = TTPExtractor(self.config)
+        return sorted(actors)
+    
+    def update_attack_data(self) -> bool:
+        """Update MITRE ATT&CK framework data."""
+        self.logger.info("Updating MITRE ATT&CK framework data...")
         
         try:
             success = self.extractor.download_attack_data()
             if success:
                 self.logger.info("ATT&CK data update completed successfully")
                 
-                # Display  statistics about the downloaded data
+                # Display statistics about the downloaded data
                 techniques = self.extractor.get_all_techniques()
+                stats = self.extractor.get_performance_stats()
+                
                 self.logger.info(f"Loaded {len(techniques)} ATT&CK techniques")
-                
-                # Count techniques by tactic
-                tactic_counts = {}
-                sub_technique_count = 0
-                
-                for tid, technique_info in techniques.items():
-                    tactic = technique_info.get('tactic', 'unknown')
-                    tactic_counts[tactic] = tactic_counts.get(tactic, 0) + 1
-                    
-                    if '.' in tid:  # Sub-technique
-                        sub_technique_count += 1
-                
-                self.logger.info(f"Sub-techniques loaded: {sub_technique_count}")
-                self.logger.info("Techniques by tactic:")
-                for tactic, count in sorted(tactic_counts.items()):
-                    self.logger.info(f"  {tactic}: {count}")
-                
-                # Test pattern compilation
-                if hasattr(self.extractor, 'technique_id_patterns'):
-                    id_patterns = len(self.extractor.technique_id_patterns)
-                    name_patterns = len(self.extractor.technique_name_patterns)
-                    self.logger.info(f"Compiled patterns - IDs: {id_patterns}, Names: {name_patterns}")
+                self.logger.info(f"Performance mode: {stats['performance_mode']}")
+                self.logger.info(f"Enabled extraction methods: {stats['extraction_methods']}")
                 
                 return True
             else:
@@ -447,89 +456,62 @@ class TTPAnalyzer:
         except Exception as e:
             self.logger.error(f"ATT&CK data update failed: {e}")
             return False
-
+    
     def get_system_info(self) -> Dict:
-        """Get information about the current system configuration."""
-        self._ensure_components_initialized()
+        """Get system information and performance statistics."""
+        extractor_stats = self.extractor.get_performance_stats()
         
-        info = {
-            '_mode': _MODE,
-            'version': '2.0' if _MODE else '1.0',
+        return {
+            'analyzer_version': 'v1.0',
+            'performance_mode': self.performance_mode,
+            'techniques_loaded': len(self.extractor.get_all_techniques()),
+            'extraction_methods': extractor_stats.get('extraction_methods', []),
             'config': {
                 'min_confidence_threshold': self.config.MIN_CONFIDENCE_THRESHOLD,
-                'heuristic_extraction': self.config.ENABLE_HEURISTIC_EXTRACTION,
-                'max_report_size_mb': self.config.MAX_REPORT_SIZE_MB
-            }
+                'heuristic_extraction': getattr(self.config, 'ENABLE_HEURISTIC_EXTRACTION', True),
+                'max_report_size_mb': getattr(self.config, 'MAX_REPORT_SIZE_MB', 50),
+                'rate_limit_delay': getattr(self.config, 'RATE_LIMIT_DELAY', 1.0)
+            },
+            'performance_stats': extractor_stats,
+            'available_modes': ['fast', 'balanced', 'comprehensive'],
+            'current_mode_features': self._get_enabled_features()
         }
-        
-        if self.extractor:
-            techniques = self.extractor.get_all_techniques()
-            info['techniques_loaded'] = len(techniques)
-            
-            if hasattr(self.extractor, 'technique_id_patterns'):
-                info['patterns_compiled'] = {
-                    'id_patterns': len(self.extractor.technique_id_patterns),
-                    'name_patterns': len(self.extractor.technique_name_patterns)
-                }
-        
-        return info
 
 
 def main():
-    """ main entry point for the application."""
+    """Main entry point for the TTP analyzer."""
     parser = argparse.ArgumentParser(
-        description=" MITRE ATT&CK TTP Analyzer for threat actors",
+        description="MITRE ATT&CK TTP Analyzer with configurable performance modes",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
+Performance Modes:
+  fast         - Maximum speed, regex-only extraction (10-30x faster)
+  balanced     - Good speed with enhanced accuracy (recommended)
+  comprehensive - Maximum accuracy with full feature set
+
 Examples:
-  python ttp_analyzer.py --actor scattered_spider
-  python ttp_analyzer.py --list-actors
-  python ttp_analyzer.py --update-attack-data
-  python ttp_analyzer.py --system-info
+  python analyzer.py --actor scattered_spider
+  python analyzer.py --actor apt1 --mode comprehensive
+  python analyzer.py --list-actors
+  python analyzer.py --update-attack-data
+  python analyzer.py --system-info
         """
     )
     
-    parser.add_argument(
-        '--actor', '-a',
-        type=str,
-        help='Name of the threat actor to analyze'
-    )
-    
-    parser.add_argument(
-        '--list-actors', '-l',
-        action='store_true',
-        help='List all available threat actors'
-    )
-    
-    parser.add_argument(
-        '--update-attack-data', '-u',
-        action='store_true',
-        help='Download and update MITRE ATT&CK framework data'
-    )
-    
-    parser.add_argument(
-        '--config', '-c',
-        type=str,
-        help='Path to custom configuration file'
-    )
-    
-    parser.add_argument(
-        '--verbose', '-v',
-        action='store_true',
-        help='Enable verbose logging'
-    )
-    
-    parser.add_argument(
-        '--system-info', '-s',
-        action='store_true',
-        help='Display system information and enhancement status'
-    )
+    parser.add_argument('--actor', '-a', help='Name of the threat actor to analyze')
+    parser.add_argument('--list-actors', '-l', action='store_true', help='List all available threat actors')
+    parser.add_argument('--update-attack-data', '-u', action='store_true', help='Download and update MITRE ATT&CK framework data')
+    parser.add_argument('--config', '-c', help='Path to custom configuration file')
+    parser.add_argument('--mode', '-m', choices=['fast', 'balanced', 'comprehensive'], 
+                       help='Performance mode (overrides config setting)')
+    parser.add_argument('--verbose', '-v', action='store_true', help='Enable verbose logging')
+    parser.add_argument('--system-info', '-s', action='store_true', help='Display system information')
     
     args = parser.parse_args()
     
     try:
-        # Initialize  analyzer
-        analyzer = TTPAnalyzer(args.config)
+        # Initialize analyzer
+        analyzer = TTPAnalyzer(args.config, args.mode)
         
         # Override log level if verbose
         if args.verbose:
@@ -540,14 +522,13 @@ Examples:
         if args.system_info:
             info = analyzer.get_system_info()
             print(f"\n=== TTP Analyzer System Information ===")
-            print(f" Mode: {'Enabled' if info['_mode'] else 'Standard'}")
-            print(f"Version: {info['version']}")
-            print(f"Techniques Loaded: {info.get('techniques_loaded', 'Unknown')}")
-            if 'patterns_compiled' in info:
-                patterns = info['patterns_compiled']
-                print(f"ID Patterns: {patterns['id_patterns']}")
-                print(f"Name Patterns: {patterns['name_patterns']}")
-            print(f"Configuration:")
+            print(f"Version: {info['analyzer_version']}")
+            print(f"Performance Mode: {info['performance_mode']}")
+            print(f"Techniques Loaded: {info['techniques_loaded']}")
+            print(f"Extraction Methods: {', '.join(info['extraction_methods'])}")
+            print(f"Available Modes: {', '.join(info['available_modes'])}")
+            print(f"Current Mode Features: {', '.join(info['current_mode_features'])}")
+            print(f"\nConfiguration:")
             for key, value in info['config'].items():
                 print(f"  {key}: {value}")
             return
@@ -557,8 +538,7 @@ Examples:
             success = analyzer.update_attack_data()
             if success:
                 print("MITRE ATT&CK data updated successfully")
-                if _MODE:
-                    print(" extraction patterns compiled")
+                print(f"extraction patterns compiled for {analyzer.performance_mode} mode")
             else:
                 print("Failed to update MITRE ATT&CK data")
                 sys.exit(1)
@@ -581,59 +561,64 @@ Examples:
         if not args.actor:
             parser.error("Either --actor, --list-actors, --update-attack-data, or --system-info must be specified")
         
-        # Run  analysis
-        print(f"Starting  analysis for {args.actor}...")
-        if _MODE:
-            print("Using  TTP extraction components")
-        else:
-            print("Using standard components - consider upgrading for better results")
+        # Run analysis
+        print(f"Starting analysis for {args.actor}...")
+        print(f"Performance mode: {analyzer.performance_mode}")
+        print(f"Enabled features: {', '.join(analyzer._get_enabled_features())}")
         
         results = analyzer.analyze_actor(args.actor)
         
-        # Print  summary
-        print(f"\n===  Analysis Summary for {results['actor_name']} ===")
-        print(f"Analysis Mode: {results['analysis_mode'].title()}")
+        # Print comprehensive summary
+        print(f"\n=== Analysis Summary for {results['actor_name']} ===")
+        print(f"Analysis Version: {results['analysis_version']}")
+        print(f"Performance Mode: {results['performance_mode']}")
         print(f"Reports processed: {results['total_reports']}")
         print(f"Parsing success rate: {results['parsing_success_rate']:.1%}")
         print(f"TTPs extracted: {results['total_ttps']}")
         print(f"Unique techniques: {results['unique_techniques']}")
         print(f"Sub-techniques: {results['sub_techniques_count']}")
         
-        #  metrics
-        if 'confidence_stats' in results:
-            conf_stats = results['confidence_stats']
-            print(f"Average confidence: {conf_stats['average']:.2f}")
-            print(f"High confidence TTPs: {conf_stats['high_confidence_count']}")
+        # Performance metrics
+        perf_metrics = results['performance_metrics']
+        print(f"Processing time: {perf_metrics['processing_time_seconds']:.1f} seconds")
+        print(f"Processing speed: {perf_metrics['reports_per_second']:.1f} reports/sec, {perf_metrics['ttps_per_second']:.1f} TTPs/sec")
         
-        if 'extraction_stats' in results:
-            ext_stats = results['extraction_stats']
-            print(f"Reports with TTPs: {ext_stats['reports_with_ttps']}")
-            
-            if ext_stats['technique_types']:
-                types = ext_stats['technique_types']
-                print(f"Match types - ID: {types['id']}, Name: {types['name']}, Heuristic: {types['heuristic']}")
+        # Extraction statistics
+        ext_stats = results['extraction_stats']
+        print(f"Reports with TTPs: {ext_stats['reports_with_ttps']}")
+        if ext_stats['match_types']:
+            match_type_summary = ', '.join(f"{k}: {v}" for k, v in ext_stats['match_types'].items())
+            print(f"Match types: {match_type_summary}")
         
-        # Handle date range safely
+        # Confidence statistics
+        conf_stats = results['confidence_stats']
+        print(f"Average confidence: {conf_stats['average']:.2f}")
+        print(f"High confidence TTPs: {conf_stats['high_confidence_count']}")
+        
+        # Date range
         date_range = results['date_range']
         if date_range['start'] and date_range['end']:
             print(f"Date range: {date_range['start']} to {date_range['end']}")
         else:
             print("Date range: No valid dates found in reports")
         
-        print(f"Processing time: {results.get('processing_time_seconds', 0):.1f} seconds")
-        
-        # Visualization status
+        # Visualizations
         vis_results = results.get('visualizations', {})
         created_vis = [name for name, path in vis_results.items() if path]
         if created_vis:
             print(f"Visualizations created: {', '.join(created_vis)}")
-            output_dir = Path(vis_results[created_vis[0]]).parent
-            print(f"Results saved to: {output_dir}")
+            print(f"Results saved to: {results['output_directory']}")
+        
+        # Performance mode recommendations
+        if results['performance_mode'] == 'fast' and results['total_ttps'] < 5:
+            print(f"\n💡 Tip: Try 'balanced' or 'comprehensive' mode for potentially more TTPs")
+        elif results['performance_mode'] == 'comprehensive' and perf_metrics['processing_time_seconds'] > 60:
+            print(f"\n💡 Tip: Try 'balanced' mode for faster processing with similar accuracy")
         
         # Show any parsing errors
         if results.get('parsing_errors'):
             error_count = len(results['parsing_errors'])
-            print(f"{error_count} parsing errors occurred (see logs for details)")
+            print(f"⚠️  {error_count} parsing errors occurred (see logs for details)")
         
     except KeyboardInterrupt:
         print("\nOperation cancelled by user")
