@@ -115,7 +115,7 @@ quickstart: install setup example update-data test-install
 # Development workflow
 dev-setup: install-dev setup example test-install
 	@echo ""
-	@echo "🎉 Development environment setup complete!"
+	@echo "Development environment setup complete!"
 	@echo ""
 	@echo "Development commands:"
 	@echo "  make test    - Run tests"

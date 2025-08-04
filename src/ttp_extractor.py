@@ -1,709 +1,577 @@
 """
-Enhanced TTP Extractor Module with improved accuracy and reduced false positives.
+TTP Extractor - Combines the best of enhanced and streamlined approaches
+Configurable performance modes: fast, balanced, comprehensive
 """
 
 import re
 import json
 import logging
-from typing import Dict, List, Optional, Tuple, Set
+import requests
+import time
+from typing import Dict, List, Optional, Set, Tuple
 from pathlib import Path
 from datetime import datetime
-import requests
-from collections import defaultdict
+from collections import defaultdict, Counter
 
 
 class TTPExtractor:
-    """Enhanced extractor for MITRE ATT&CK Tactics, Techniques, and Procedures."""
+    """
+    TTP extractor with configurable performance modes.
+    
+    Modes:
+    - fast: Streamlined regex-only approach (highest performance)
+    - balanced: Fast regex + selective name matching (recommended)
+    - comprehensive: Full enhanced extraction (highest accuracy)
+    """
     
     def __init__(self, config):
-        """Initialize the TTP extractor."""
+        """Initialize with performance mode from config."""
         self.config = config
         self.logger = logging.getLogger(__name__)
         
-        # Load MITRE ATT&CK framework data
-        self.attack_data = self._load_attack_data()
+        # Determine performance mode
+        self.performance_mode = getattr(config, 'PERFORMANCE_MODE', 'balanced').lower()
+        if self.performance_mode not in ['fast', 'balanced', 'comprehensive']:
+            self.logger.warning(f"Invalid performance mode '{self.performance_mode}', using 'balanced'")
+            self.performance_mode = 'balanced'
         
-        # Compile regex patterns for efficient matching
+        self.logger.info(f"Initializing TTP extractor in '{self.performance_mode}' mode")
+        
+        # Performance tracking
+        start_time = time.time()
+        
+        # Load MITRE data efficiently
         self.techniques = {}
-        self.technique_id_patterns = []
-        self.technique_name_patterns = []
+        self.technique_ids = set()
+        self._load_mitre_data()
+        
+        # Compile patterns based on performance mode
         self._compile_patterns()
         
-    def _load_attack_data(self) -> Dict:
-        """Load MITRE ATT&CK framework data."""
+        load_time = time.time() - start_time
+        self.logger.info(f"Loaded {len(self.techniques)} techniques in {load_time:.3f}s")
+    
+    def _load_mitre_data(self):
+        """Load MITRE ATT&CK data with optimized parsing."""
         data_file = Path(self.config.ATTACK_DATA_FILE)
         
         if not data_file.exists():
-            self.logger.error(f"ATT&CK data file not found: {data_file}")
-            self.logger.error("Please run: python ttp_analyzer.py --update-attack-data")
-            return self._get_default_attack_data()
+            self.logger.warning(f"ATT&CK data not found: {data_file}")
+            self.logger.warning("Run --update-attack-data to download")
+            return
         
         try:
             with open(data_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                self.logger.info(f"Loaded ATT&CK data from {data_file}")
-                return data
+                raw_data = json.load(f)
+            
+            techniques = {}
+            technique_ids = set()
+            
+            for obj in raw_data.get("objects", []):
+                if obj.get("type") != "attack-pattern":
+                    continue
+                
+                technique_id = self._extract_technique_id(obj)
+                if not technique_id:
+                    continue
+                
+                # Store data with appropriate detail level based on mode
+                if self.performance_mode == 'fast':
+                    # Minimal data for speed
+                    techniques[technique_id] = {
+                        "name": obj.get("name", ""),
+                        "tactic": self._extract_primary_tactic(obj)
+                    }
+                else:
+                    # More complete data for enhanced modes
+                    techniques[technique_id] = {
+                        "name": obj.get("name", ""),
+                        "tactic": self._extract_primary_tactic(obj),
+                        "description": obj.get("description", "")[:200]  # Truncate for memory
+                    }
+                
+                technique_ids.add(technique_id)
+            
+            self.techniques = techniques
+            self.technique_ids = technique_ids
+            
         except Exception as e:
             self.logger.error(f"Failed to load ATT&CK data: {e}")
-            self.logger.error("Try running: python ttp_analyzer.py --update-attack-data")
-            return self._get_default_attack_data()
-
-    def download_attack_data(self) -> bool:
-        """Download MITRE ATT&CK data from official source."""
-        try:
-            self.logger.info("Downloading MITRE ATT&CK data...")
-            url = "https://raw.githubusercontent.com/mitre/cti/master/enterprise-attack/enterprise-attack.json"
-            response = requests.get(url, timeout=30)
-            response.raise_for_status()
-            
-            data = response.json()
-            
-            # Save for future use
-            data_file = Path(self.config.ATTACK_DATA_FILE)
-            data_file.parent.mkdir(parents=True, exist_ok=True)
-            
-            with open(data_file, 'w', encoding='utf-8') as f:
-                json.dump(data, f, indent=2)
-                
-            self.logger.info(f"ATT&CK data downloaded and saved to: {data_file}")
-            
-            # Update internal data and recompile patterns
-            self.attack_data = data
-            self._compile_patterns()
-            
-            return True
-            
-        except Exception as e:
-            self.logger.error(f"Failed to download ATT&CK data: {e}")
-            return False
-            
-    def _get_default_attack_data(self) -> Dict:
-        """Get default ATT&CK data with common techniques."""
-        return {
-            "objects": [
-                {
-                    "type": "attack-pattern",
-                    "id": "attack-pattern--01df3350-ce05-4bdf-bdf8-0a919a66d4a8",
-                    "external_references": [{"external_id": "T1566.001", "source_name": "mitre-attack"}],
-                    "name": "Spearphishing Attachment",
-                    "description": "Spearphishing attachment is a specific variant of spearphishing.",
-                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "initial-access"}]
-                },
-                {
-                    "type": "attack-pattern", 
-                    "id": "attack-pattern--dfd7cc1d-e1d8-4394-a198-97c4cab8aa67",
-                    "external_references": [{"external_id": "T1055", "source_name": "mitre-attack"}],
-                    "name": "Process Injection",
-                    "description": "Process injection is a method of executing arbitrary code.",
-                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "privilege-escalation"}]
-                },
-                {
-                    "type": "attack-pattern",
-                    "id": "attack-pattern--7bc57495-ea59-4380-be31-a64af124ef18",
-                    "external_references": [{"external_id": "T1059", "source_name": "mitre-attack"}],
-                    "name": "Command and Scripting Interpreter",
-                    "description": "Adversaries may abuse command and script interpreters to execute commands, scripts, or binaries.",
-                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "execution"}]
-                },
-                {
-                    "type": "attack-pattern",
-                    "id": "attack-pattern--e6919abc-99f9-4c6c-95a5-14761e7b2add",
-                    "external_references": [{"external_id": "T1105", "source_name": "mitre-attack"}],
-                    "name": "Ingress Tool Transfer",
-                    "description": "Adversaries may transfer tools or other files from an external system into a compromised environment.",
-                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "command-and-control"}]
-                },
-                {
-                    "type": "attack-pattern",
-                    "id": "attack-pattern--7bc57495-ea59-4380-be31-a64af124ef19",
-                    "external_references": [{"external_id": "T1083", "source_name": "mitre-attack"}],
-                    "name": "File and Directory Discovery",
-                    "description": "Adversaries may enumerate files and directories or may search in specific locations of a host or network share for certain information within a file system.",
-                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "discovery"}]
-                },
-                {
-                    "type": "attack-pattern",
-                    "id": "attack-pattern--799ace7f-e227-4411-baa0-8868704f2a69",
-                    "external_references": [{"external_id": "T1070", "source_name": "mitre-attack"}],
-                    "name": "Indicator Removal",
-                    "description": "Adversaries may delete or alter generated artifacts on a host system, including logs or captured files such as quarantined malware.",
-                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "defense-evasion"}]
-                },
-                {
-                    "type": "attack-pattern",
-                    "id": "attack-pattern--b3d682b6-98f2-4fb0-aa3b-b4df007ca70a",
-                    "external_references": [{"external_id": "T1027", "source_name": "mitre-attack"}],
-                    "name": "Obfuscated Files or Information",
-                    "description": "Adversaries may attempt to make an executable or file difficult to discover or analyze by encrypting, encoding, or otherwise obfuscating its contents on the system or in transit.",
-                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "defense-evasion"}]
-                },
-                {
-                    "type": "attack-pattern",
-                    "id": "attack-pattern--b17a1a56-e99c-403c-8948-561df0cffe81",
-                    "external_references": [{"external_id": "T1078", "source_name": "mitre-attack"}],
-                    "name": "Valid Accounts",
-                    "description": "Adversaries may obtain and abuse credentials of existing accounts as a means of gaining Initial Access, Persistence, Privilege Escalation, or Defense Evasion.",
-                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "defense-evasion"}]
-                },
-                {
-                    "type": "attack-pattern",
-                    "id": "attack-pattern--2b742742-28c3-4e1b-bab7-8350d6300fa7",
-                    "external_references": [{"external_id": "T1566", "source_name": "mitre-attack"}],
-                    "name": "Phishing",
-                    "description": "Adversaries may send phishing messages to gain access to victim systems.",
-                    "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": "initial-access"}]
-                }
-            ]
-        }
-        
-    def _compile_patterns(self):
-        """Compile enhanced regex patterns for TTP extraction."""
-        # Clear existing patterns
-        self.techniques = {}
-        self.technique_id_patterns = []
-        self.technique_name_patterns = []
-        
-        # Track technique names to avoid duplicates and overly generic terms
-        name_to_techniques = defaultdict(list)
-        
-        for obj in self.attack_data.get("objects", []):
-            if obj.get("type") == "attack-pattern":
-                # Get technique ID
-                technique_id = None
-                for ref in obj.get("external_references", []):
-                    if ref.get("source_name") == "mitre-attack":
-                        technique_id = ref.get("external_id")
-                        break
-                        
+    
+    def _extract_technique_id(self, obj: Dict) -> Optional[str]:
+        """Fast technique ID extraction."""
+        for ref in obj.get("external_references", []):
+            if ref.get("source_name") == "mitre-attack":
+                technique_id = ref.get("external_id")
                 if technique_id and technique_id.startswith('T'):
-                    name = obj.get("name", "")
-                    description = obj.get("description", "")
-                    
-                    # Get tactic
-                    tactic = "unknown"
-                    kill_chain_phases = obj.get("kill_chain_phases", [])
-                    if kill_chain_phases:
-                        tactic = kill_chain_phases[0].get("phase_name", "unknown")
-                    
-                    self.techniques[technique_id] = {
-                        "name": name,
-                        "description": description,
-                        "tactic": tactic
-                    }
-                    
-                    # Create ID pattern (always high confidence)
-                    id_pattern = rf'\b{re.escape(technique_id)}\b'
-                    self.technique_id_patterns.append((id_pattern, technique_id, 'id'))
-                    
-                    # Track name for careful handling
-                    if name:
-                        name_to_techniques[name.lower()].append(technique_id)
+                    return technique_id
+        return None
+    
+    def _extract_primary_tactic(self, obj: Dict) -> str:
+        """Extract primary tactic efficiently."""
+        phases = obj.get("kill_chain_phases", [])
+        if phases:
+            return phases[0].get("phase_name", "unknown")
+        return "unknown"
+    
+    def _compile_patterns(self):
+        """Compile patterns based on performance mode."""
+        # Always compile basic ID patterns (used in all modes)
+        self.technique_id_pattern = re.compile(r'\bT\d{4}(?:\.\d{3})?\b')
         
-        # Create enhanced name patterns with context requirements
-        for name_lower, technique_ids in name_to_techniques.items():
-            # Skip overly generic or ambiguous technique names
-            if self._is_generic_name(name_lower):
-                self.logger.debug(f"Skipping generic technique name: {name_lower}")
+        # Compile name patterns for balanced/comprehensive modes
+        self.technique_name_patterns = []
+        if self.performance_mode in ['balanced', 'comprehensive']:
+            self._compile_name_patterns()
+        
+        # Compile heuristic patterns for comprehensive mode
+        self.heuristic_patterns = {}
+        if self.performance_mode == 'comprehensive':
+            self._compile_heuristic_patterns()
+    
+    def _compile_name_patterns(self):
+        """Compile technique name patterns for enhanced matching."""
+        # Filter technique names to avoid ambiguous ones
+        name_frequency = Counter(info['name'].lower() for info in self.techniques.values())
+        
+        for technique_id, info in self.techniques.items():
+            name = info.get('name', '')
+            if not name or len(name) < 4:
                 continue
             
-            if len(technique_ids) == 1:
-                # Unique name - create context-aware pattern
-                technique_id = technique_ids[0]
-                context_pattern = self._create_context_aware_pattern(name_lower)
-                if context_pattern:
-                    self.technique_name_patterns.append((context_pattern, technique_id, 'name'))
-            else:
-                # Duplicate name - skip to avoid confusion
-                self.logger.debug(f"Skipping duplicate technique name: {name_lower} -> {technique_ids}")
-        
-        self.logger.info(f"Compiled {len(self.technique_id_patterns)} ID patterns and "
-                        f"{len(self.technique_name_patterns)} context-aware name patterns")
+            # Skip ambiguous names in balanced mode, allow in comprehensive
+            if self.performance_mode == 'balanced' and name_frequency[name.lower()] > 1:
+                continue
+            
+            # Apply smart filtering
+            if self._should_include_technique_name(name):
+                pattern = self._create_context_pattern(name, technique_id)
+                if pattern:
+                    self.technique_name_patterns.append((pattern, technique_id, name))
     
-    def _is_generic_name(self, name: str) -> bool:
-        """Check if a technique name is too generic and likely to cause false positives."""
-        # Allow well-known MITRE technique names even if they contain generic words
-        known_technique_names = {
-            'process injection', 'valid accounts', 'remote services', 'web services',
-            'command and scripting interpreter', 'file and directory discovery',
-            'network discovery', 'system discovery', 'account discovery',
-            'remote access software', 'data staged', 'data collection',
-            'credential access', 'defense evasion', 'privilege escalation'
-        }
+    def _should_include_technique_name(self, name: str) -> bool:
+        """Smart filtering for technique names."""
+        name_lower = name.lower().strip()
         
-        name_lower = name.lower()
-        
-        # Don't filter known technique names
-        if name_lower in known_technique_names:
+        # Skip very short names
+        if len(name) < 4:
             return False
         
-        # Check for overly generic single words or very common phrases
-        overly_generic = {
-            'data', 'file', 'files', 'user', 'users', 'network', 'system', 'systems',
-            'access', 'remote', 'local', 'server', 'client', 'application', 'software',
-            'tool', 'tools', 'script', 'scripts', 'command', 'commands',
-            'registry', 'library', 'api', 'protocol', 'connection', 'communication',
-            'information', 'service', 'services'
-        }
+        # In balanced mode, be more selective
+        if self.performance_mode == 'balanced':
+            # Skip single generic words
+            words = name_lower.split()
+            if len(words) == 1:
+                generic_single = {'data', 'file', 'user', 'access', 'network', 'system'}
+                return words[0] not in generic_single
+            
+            # Skip very generic combinations
+            very_generic = {'data file', 'user access', 'file access'}
+            return name_lower not in very_generic
         
-        words = name_lower.split()
-        
-        # Filter out single generic words
-        if len(words) == 1 and words[0] in overly_generic:
-            return True
-        
-        # Filter out very generic two-word combinations
-        if len(words) == 2:
-            # Both words are overly generic
-            if all(word in overly_generic for word in words):
-                return True
-            # Very common generic phrases
-            generic_phrases = {
-                'web service', 'data file', 'user account', 'network access',
-                'system tool', 'remote connection', 'local service'
-            }
-            if name_lower in generic_phrases:
-                return True
-        
-        # Check for very short names (but allow some short legitimate ones)
-        if len(name) < 6:
-            return True
-        
-        return False
+        # Comprehensive mode is more permissive
+        return True
     
-    def _create_context_aware_pattern(self, technique_name: str) -> Optional[str]:
-        """Create a context-aware pattern that requires MITRE ATT&CK context."""
-        # Escape the technique name for regex
+    def _create_context_pattern(self, technique_name: str, technique_id: str) -> Optional[str]:
+        """Create context-aware pattern for technique names."""
         escaped_name = re.escape(technique_name)
         
-        # Create more flexible pattern that requires MITRE context within reasonable distance
-        # Look for technique name near MITRE references, technique IDs, or threat intelligence context
-        context_pattern = (
-            rf'(?:'
-            # MITRE context before technique name (within 50 characters)
-            rf'(?:MITRE\s+ATT&CK|mitre\s+att&ck|ATT&CK|attack\.mitre\.org|technique|tactic|TTP).{{0,50}}?{escaped_name}'
-            rf'|'
-            # Technique name before MITRE context (within 50 characters)  
-            rf'{escaped_name}.{{0,50}}?(?:MITRE\s+ATT&CK|mitre\s+att&ck|ATT&CK|attack\.mitre\.org|technique|tactic|TTP)'
-            rf'|'
-            # Technique ID near technique name
-            rf'(?:T\d{{4}}(?:\.\d{{3}})?.{{0,30}}?{escaped_name}|{escaped_name}.{{0,30}}?T\d{{4}}(?:\.\d{{3}})?)'
-            rf'|'
-            # Technique name in brackets or parentheses (common in reports)
-            rf'(?:\[.{{0,20}}?{escaped_name}.{{0,20}}?\]|\(.{{0,20}}?{escaped_name}.{{0,20}}?\))'
-            rf'|'
-            # Threat intelligence context
-            rf'(?:adversar|attacker|threat\s+actor|malicious|campaign).{{0,50}}?{escaped_name}'
-            rf'|'
-            rf'{escaped_name}.{{0,50}}?(?:adversar|attacker|threat\s+actor|malicious|campaign)'
-            rf')'
-        )
+        if self.performance_mode == 'balanced':
+            # Simpler patterns for balanced mode
+            patterns = [
+                rf'(?:MITRE|ATT&CK|T\d{{4}}).{{0,50}}?{escaped_name}',
+                rf'{escaped_name}.{{0,50}}?(?:MITRE|ATT&CK|T\d{{4}})',
+                rf'(?:technique|tactic|adversar|threat).{{0,50}}?{escaped_name}',
+            ]
+        else:
+            # More comprehensive patterns for comprehensive mode
+            patterns = [
+                rf'(?:MITRE\s+ATT&CK|attack\.mitre\.org).{{0,75}}?{escaped_name}',
+                rf'(?:T\d{{4}}(?:\.\d{{3}})?.{{0,50}}?{escaped_name}|{escaped_name}.{{0,50}}?T\d{{4}})',
+                rf'(?:technique|tactic|TTP|adversar|attacker|threat\s+actor).{{0,75}}?{escaped_name}',
+                rf'(?:observed|detected|employed|used|utilized).{{0,50}}?{escaped_name}',
+            ]
         
-        return context_pattern
+        return '|'.join(f'(?:{pattern})' for pattern in patterns)
+    
+    def _compile_heuristic_patterns(self):
+        """Compile heuristic patterns for comprehensive mode."""
+        self.heuristic_patterns = {
+            'T1059': [  # Command and Scripting Interpreter
+                r'(?:adversar|attacker|threat\s+actor|malicious).{0,50}(?:powershell|command.line|script|cmd\.exe)',
+                r'(?:execute|execution|run|invoke).{0,30}(?:malicious|suspicious).{0,30}(?:command|script)',
+            ],
+            'T1105': [  # Ingress Tool Transfer
+                r'(?:adversar|attacker|threat\s+actor).{0,50}(?:download|upload|transfer|deploy).{0,30}(?:tool|payload|malware)',
+                r'(?:malicious|suspicious).{0,30}(?:file\s+transfer|tool\s+download)',
+            ],
+            'T1566': [  # Phishing
+                r'(?:adversar|attacker|threat\s+actor).{0,50}(?:phishing|spear.?phishing|malicious\s+email)',
+                r'(?:campaign|operation|attack).{0,50}(?:phishing\s+email|malicious\s+attachment)',
+            ]
+        }
     
     def extract_ttps(self, report_data: Dict) -> List[Dict]:
-        """
-        Extract TTPs from a parsed report with enhanced accuracy.
-        
-        Args:
-            report_data: Parsed report data from ReportParser
-            
-        Returns:
-            List of extracted TTP dictionaries
-        """
+        """Extract TTPs using the configured performance mode."""
         content = report_data.get('content', '')
         
-        # Check if content is empty or too short
-        if not content or len(content.strip()) < 30:
-            self.logger.warning(f"Report content is empty or too short: {report_data.get('source', 'unknown')}")
+        if not content or len(content.strip()) < 20:
+            self.logger.debug("Content too short for extraction")
             return []
         
-        self.logger.debug(f"Extracting TTPs from {len(content)} characters of content")
-        
         extracted_ttps = []
-        matched_techniques = set()  # Avoid duplicates within this report
+        matched_techniques = set()
         
-        # Phase 1: Search for technique IDs (highest confidence)
-        id_matches = self._extract_by_technique_ids(content, report_data, matched_techniques)
+        # Phase 1: Always do fast ID extraction (core of all modes)
+        id_matches = self._extract_technique_ids(content, report_data, matched_techniques)
         extracted_ttps.extend(id_matches)
         
-        # Phase 2: Search for technique names with context validation (medium confidence)
-        name_matches = self._extract_by_technique_names(content, report_data, matched_techniques)
-        extracted_ttps.extend(name_matches)
+        # Phase 2: Name extraction for balanced/comprehensive modes
+        if self.performance_mode in ['balanced', 'comprehensive']:
+            name_matches = self._extract_technique_names(content, report_data, matched_techniques)
+            extracted_ttps.extend(name_matches)
         
-        # Phase 3: Heuristic extraction (lower confidence, if enabled)
-        if self.config.ENABLE_HEURISTIC_EXTRACTION:
-            heuristic_matches = self._extract_heuristic_ttps(report_data, matched_techniques)
+        # Phase 3: Heuristic extraction for comprehensive mode only
+        if self.performance_mode == 'comprehensive' and self.config.ENABLE_HEURISTIC_EXTRACTION:
+            heuristic_matches = self._extract_heuristics(content, report_data, matched_techniques)
             extracted_ttps.extend(heuristic_matches)
         
-        # Filter by confidence threshold and validate
-        validated_ttps = self._validate_and_filter_ttps(extracted_ttps)
+        # Apply appropriate validation
+        validated_ttps = self._validate_extractions(extracted_ttps)
         
-        # Sort by confidence (highest first)
+        # Sort by confidence
         validated_ttps.sort(key=lambda x: x.get('confidence', 0), reverse=True)
         
-        self.logger.info(f"Extracted {len(validated_ttps)} validated TTPs from report")
-        
-        if len(validated_ttps) == 0:
-            self.logger.warning(f"No TTPs extracted from: {report_data.get('source', 'unknown')}")
-            # Log a sample for debugging
-            sample = content[:300] + "..." if len(content) > 300 else content
-            self.logger.debug(f"Content sample: {sample}")
-        
+        self.logger.debug(f"Extracted {len(validated_ttps)} TTPs in {self.performance_mode} mode")
         return validated_ttps
     
-    def _extract_by_technique_ids(self, content: str, report_data: Dict, matched_techniques: Set[str]) -> List[Dict]:
-        """Extract TTPs by technique IDs with high confidence."""
+    def _extract_technique_ids(self, content: str, report_data: Dict, matched_techniques: Set[str]) -> List[Dict]:
+        """Fast technique ID extraction (used in all modes)."""
         ttps = []
-        content_lower = content.lower()
+        matches = list(self.technique_id_pattern.finditer(content))
         
-        for pattern, technique_id, match_type in self.technique_id_patterns:
+        if not matches:
+            return ttps
+        
+        for match in matches:
+            technique_id = match.group()
+            
             if technique_id in matched_techniques:
                 continue
             
-            matches = list(re.finditer(pattern, content, re.IGNORECASE))
+            technique_info = self.techniques.get(technique_id)
+            if not technique_info:
+                continue
             
-            if matches:
-                # Validate that this is actually a MITRE reference
-                match = matches[0]
-                context = self._get_match_context(content, match.start(), match.end())
-                
-                if self._validate_mitre_context(context, technique_id):
-                    technique_info = self.techniques.get(technique_id, {})
-                    
-                    ttp = {
-                        'technique_id': technique_id,
-                        'technique_name': technique_info.get('name', ''),
-                        'tactic': technique_info.get('tactic', 'unknown'),
-                        'description': technique_info.get('description', ''),
-                        'matched_text': match.group(),
-                        'match_position': match.start(),
-                        'confidence': self._calculate_confidence(match.group(), technique_info, match_type, context),
-                        'source': report_data.get('source', ''),
-                        'report_title': report_data.get('title', ''),
-                        'date': self._parse_date(report_data.get('publication_date')),
-                        'extracted_at': datetime.utcnow().isoformat(),
-                        'match_type': match_type,
-                        'match_count': len(matches),
-                        'context': context[:100]  # Store context for validation
-                    }
-                    
-                    ttps.append(ttp)
-                    matched_techniques.add(technique_id)
-                    self.logger.debug(f"Found technique ID: {technique_id} ({match.group()}) in context: {context[:50]}...")
-                else:
-                    self.logger.debug(f"Rejected technique ID {technique_id} due to invalid context: {context[:100]}...")
+            # Fast confidence calculation
+            confidence = self._calculate_confidence(match, content, 'id')
+            
+            if confidence < self.config.MIN_CONFIDENCE_THRESHOLD:
+                continue
+            
+            ttp = {
+                'technique_id': technique_id,
+                'technique_name': technique_info['name'],
+                'tactic': technique_info['tactic'],
+                'description': technique_info.get('description', ''),
+                'matched_text': technique_id,
+                'match_position': match.start(),
+                'confidence': confidence,
+                'source': report_data.get('source', ''),
+                'report_title': report_data.get('title', ''),
+                'date': self._parse_date(report_data.get('publication_date')),
+                'extracted_at': datetime.utcnow().isoformat(),
+                'match_type': 'regex_id',
+                'extraction_mode': self.performance_mode
+            }
+            
+            ttps.append(ttp)
+            matched_techniques.add(technique_id)
         
         return ttps
     
-    def _extract_by_technique_names(self, content: str, report_data: Dict, matched_techniques: Set[str]) -> List[Dict]:
-        """Extract TTPs by technique names with context validation."""
+    def _extract_technique_names(self, content: str, report_data: Dict, matched_techniques: Set[str]) -> List[Dict]:
+        """Name-based extraction for balanced/comprehensive modes."""
         ttps = []
         
-        for pattern, technique_id, match_type in self.technique_name_patterns:
+        for pattern, technique_id, technique_name in self.technique_name_patterns:
             if technique_id in matched_techniques:
                 continue
             
             matches = list(re.finditer(pattern, content, re.IGNORECASE | re.DOTALL))
+            if not matches:
+                continue
             
-            if matches:
-                match = matches[0]
-                full_match = match.group()
-                
-                # Extract just the technique name from the context match
-                technique_name = self.techniques[technique_id]['name']
-                name_match = re.search(re.escape(technique_name), full_match, re.IGNORECASE)
-                
-                if name_match:
-                    # Get broader context for validation
-                    context = self._get_match_context(content, match.start(), match.end())
-                    
-                    # Additional validation for name matches
-                    if self._validate_technique_name_match(context, technique_name, technique_id):
-                        technique_info = self.techniques.get(technique_id, {})
-                        
-                        ttp = {
-                            'technique_id': technique_id,
-                            'technique_name': technique_info.get('name', ''),
-                            'tactic': technique_info.get('tactic', 'unknown'),
-                            'description': technique_info.get('description', ''),
-                            'matched_text': name_match.group(),
-                            'match_position': match.start() + name_match.start(),
-                            'confidence': self._calculate_confidence(name_match.group(), technique_info, match_type, context),
-                            'source': report_data.get('source', ''),
-                            'report_title': report_data.get('title', ''),
-                            'date': self._parse_date(report_data.get('publication_date')),
-                            'extracted_at': datetime.utcnow().isoformat(),
-                            'match_type': match_type,
-                            'match_count': len(matches),
-                            'context': context[:100]
-                        }
-                        
-                        ttps.append(ttp)
-                        matched_techniques.add(technique_id)
-                        self.logger.debug(f"Found technique name: {technique_id} ({name_match.group()})")
+            match = matches[0]  # Take first match
+            
+            # Find the actual technique name within the match
+            name_match = re.search(re.escape(technique_name), match.group(), re.IGNORECASE)
+            if not name_match:
+                continue
+            
+            confidence = self._calculate_confidence(match, content, 'name')
+            
+            if confidence < self.config.MIN_CONFIDENCE_THRESHOLD:
+                continue
+            
+            technique_info = self.techniques[technique_id]
+            
+            ttp = {
+                'technique_id': technique_id,
+                'technique_name': technique_info['name'],
+                'tactic': technique_info['tactic'],
+                'description': technique_info.get('description', ''),
+                'matched_text': name_match.group(),
+                'match_position': match.start() + name_match.start(),
+                'confidence': confidence,
+                'source': report_data.get('source', ''),
+                'report_title': report_data.get('title', ''),
+                'date': self._parse_date(report_data.get('publication_date')),
+                'extracted_at': datetime.utcnow().isoformat(),
+                'match_type': 'name_context',
+                'extraction_mode': self.performance_mode
+            }
+            
+            ttps.append(ttp)
+            matched_techniques.add(technique_id)
+            break
         
         return ttps
     
-    def _get_match_context(self, content: str, start: int, end: int, window: int = 300) -> str:
+    def _extract_heuristics(self, content: str, report_data: Dict, matched_techniques: Set[str]) -> List[Dict]:
+        """Heuristic extraction for comprehensive mode."""
+        ttps = []
+        content_lower = content.lower()
+        
+        for technique_id, patterns in self.heuristic_patterns.items():
+            if technique_id in matched_techniques or technique_id not in self.techniques:
+                continue
+            
+            for pattern in patterns:
+                matches = list(re.finditer(pattern, content_lower, re.IGNORECASE | re.DOTALL))
+                if not matches:
+                    continue
+                
+                match = matches[0]
+                
+                # Require security context for heuristic matches
+                context = self._get_match_context(content, match.start(), match.end())
+                if not self._has_security_context(context):
+                    continue
+                
+                technique_info = self.techniques[technique_id]
+                
+                ttp = {
+                    'technique_id': technique_id,
+                    'technique_name': technique_info['name'],
+                    'tactic': technique_info['tactic'],
+                    'description': technique_info.get('description', ''),
+                    'matched_text': match.group()[:50],
+                    'match_position': match.start(),
+                    'confidence': 0.35,  # Lower confidence for heuristics
+                    'source': report_data.get('source', ''),
+                    'report_title': report_data.get('title', ''),
+                    'date': self._parse_date(report_data.get('publication_date')),
+                    'extracted_at': datetime.utcnow().isoformat(),
+                    'match_type': 'heuristic',
+                    'extraction_mode': self.performance_mode
+                }
+                
+                ttps.append(ttp)
+                matched_techniques.add(technique_id)
+                break
+        
+        return ttps
+    
+    def _calculate_confidence(self, match, content: str, match_type: str) -> float:
+        """Smart confidence calculation based on performance mode."""
+        # Base confidence by match type
+        if match_type == 'id':
+            confidence = 0.85
+        elif match_type == 'name':
+            confidence = 0.6 if self.performance_mode == 'balanced' else 0.55
+        else:  # heuristic
+            confidence = 0.35
+        
+        # Fast context analysis
+        if self.performance_mode in ['balanced', 'comprehensive']:
+            context = self._get_match_context(content, match.start(), match.end(), 100)
+            context_lower = context.lower()
+            
+            # Boost for MITRE context
+            if any(indicator in context_lower for indicator in ['mitre', 'att&ck', 'attack.mitre.org']):
+                confidence += 0.1
+            
+            # Boost for technique IDs in context
+            if re.search(r'\bT\d{4}(?:\.\d{3})?\b', context):
+                confidence += 0.05
+            
+            # Boost for threat context
+            threat_keywords = ['threat actor', 'adversary', 'campaign', 'technique', 'tactic']
+            if any(keyword in context_lower for keyword in threat_keywords):
+                confidence += 0.03
+        
+        return min(1.0, confidence)
+    
+    def _get_match_context(self, content: str, start: int, end: int, window: int = 100) -> str:
         """Get surrounding context for a match."""
         context_start = max(0, start - window)
         context_end = min(len(content), end + window)
         return content[context_start:context_end]
     
-    def _validate_mitre_context(self, context: str, technique_id: str) -> bool:
-        """Validate that a match is in proper MITRE ATT&CK context."""
+    def _has_security_context(self, context: str) -> bool:
+        """Check if context has security/threat indicators."""
         context_lower = context.lower()
-        
-        # Check for negative contexts that should reject the match
-        negative_indicators = [
-            'should not trigger', 'should not match', 'should not extract',
-            'not a valid', 'example of', 'for example', 'such as',
-            'should not be', 'avoid matching', 'prevent', 'exclude',
-            'false positive', 'incorrectly identified', 'mistakenly'
-        ]
-        
-        # Reject if in negative context
-        if any(indicator in context_lower for indicator in negative_indicators):
-            self.logger.debug(f"Rejecting {technique_id} due to negative context: {context_lower[:100]}")
-            return False
-        
-        # Look for MITRE/ATT&CK indicators in context
-        mitre_indicators = [
-            'mitre', 'att&ck', 'attack.mitre.org', 'technique', 'tactic', 'ttp',
-            'adversary', 'threat', 'cybersecurity', 'malware', 'ransomware'
-        ]
-        
-        # Check for technique ID patterns in context
-        technique_pattern = r'\bT\d{4}(?:\.\d{3})?\b'
-        has_technique_ids = bool(re.search(technique_pattern, context))
-        
-        # Check for MITRE indicators
-        has_mitre_context = any(indicator in context_lower for indicator in mitre_indicators)
-        
-        # Higher confidence if both conditions are met
-        return has_technique_ids or has_mitre_context
-    
-    def _validate_technique_name_match(self, context: str, technique_name: str, technique_id: str) -> bool:
-        """Additional validation for technique name matches."""
-        context_lower = context.lower()
-        
-        # Reject matches in clearly non-MITRE contexts
-        negative_indicators = [
-            'product', 'company', 'brand', 'service provider', 'vendor',
-            'advertisement', 'marketing', 'commercial', 'purchase', 'buy',
-            'about us', 'contact us', 'privacy policy', 'terms of service',
-            'should not trigger', 'should not match', 'should not extract',
-            'not a valid', 'example of', 'for example', 'such as'
-        ]
-        
-        if any(indicator in context_lower for indicator in negative_indicators):
-            self.logger.debug(f"Rejecting {technique_name} due to negative context indicators")
-            return False
-        
-        # For name matches, we already have context awareness built into the pattern,
-        # so if the pattern matched, we can be more confident it's legitimate
-        
-        # Require some form of security/threat context for name matches
         security_indicators = [
-            'mitre', 'att&ck', 'attack.mitre.org', 'technique', 'tactic', 'ttp',
-            'adversary', 'attacker', 'threat actor', 'malicious', 'campaign',
-            'cybersecurity', 'security', 'threat', 'analysis', 'intelligence',
-            'observed', 'detected', 'employed', 'used', 'utilized', 'leveraged'
-        ]
-        
-        has_security_context = any(indicator in context_lower for indicator in security_indicators)
-        
-        # Check for technique ID near the name (additional confidence)
-        id_pattern = r'\bT\d{4}(?:\.\d{3})?\b'
-        nearby_ids = re.findall(id_pattern, context)
-        
-        # Accept if we have security context OR nearby technique IDs
-        return has_security_context or len(nearby_ids) > 0
-    
-    def _extract_heuristic_ttps(self, report_data: Dict, already_matched: Set[str]) -> List[Dict]:
-        """Extract TTPs using conservative heuristic patterns."""
-        content = report_data.get('content', '').lower()
-        heuristic_ttps = []
-        
-        # More conservative heuristic patterns with better context
-        heuristic_patterns = {
-            'T1059': [  # Command and Scripting Interpreter
-                r'(?:adversar|attacker|threat actor).*?(?:powershell|command.?line|script)',
-                r'(?:malicious|suspicious).*?(?:powershell|cmd\.exe|script execution)',
-                r'(?:execute|run|invoke).{0,30}(?:malicious|suspicious|adversar).*?(?:command|script)'
-            ],
-            'T1105': [  # Ingress Tool Transfer
-                r'(?:adversar|attacker).*?(?:download|upload|transfer).{0,30}(?:tool|payload|malware)',
-                r'(?:malicious|suspicious).*?(?:file transfer|tool download|payload delivery)',
-                r'(?:threat actor|adversar).*?(?:wget|curl|certutil|bitsadmin)'
-            ],
-            'T1083': [  # File and Directory Discovery
-                r'(?:adversar|attacker).*?(?:enumerate|discover|search).{0,30}(?:file|director)',
-                r'(?:reconnaissance|discovery).*?(?:file system|director|folder)',
-                r'(?:threat actor|malicious).*?(?:file discovery|system reconnaissance)'
-            ]
-        }
-        
-        for technique_id, patterns in heuristic_patterns.items():
-            # Skip if already matched or technique doesn't exist
-            if technique_id in already_matched or technique_id not in self.techniques:
-                continue
-            
-            for pattern in patterns:
-                matches = list(re.finditer(pattern, content, re.IGNORECASE | re.DOTALL))
-                
-                if matches:
-                    match = matches[0]
-                    context = self._get_match_context(report_data.get('content', ''), match.start(), match.end())
-                    
-                    # Additional validation for heuristic matches
-                    if self._validate_heuristic_match(context, technique_id):
-                        technique_info = self.techniques.get(technique_id, {})
-                        
-                        ttp = {
-                            'technique_id': technique_id,
-                            'technique_name': technique_info.get('name', f'Technique {technique_id}'),
-                            'tactic': technique_info.get('tactic', 'unknown'),
-                            'description': technique_info.get('description', ''),
-                            'matched_text': match.group()[:50],  # Limit length
-                            'match_position': match.start(),
-                            'confidence': 0.4,  # Lower confidence for heuristic matches
-                            'source': report_data.get('source', ''),
-                            'report_title': report_data.get('title', ''),
-                            'date': self._parse_date(report_data.get('publication_date')),
-                            'extracted_at': datetime.utcnow().isoformat(),
-                            'match_type': 'heuristic',
-                            'match_count': len(matches),
-                            'context': context[:100]
-                        }
-                        
-                        heuristic_ttps.append(ttp)
-                        already_matched.add(technique_id)
-                        self.logger.debug(f"Found heuristic match: {technique_id}")
-                        break  # Only match once per technique per report
-        
-        return heuristic_ttps
-    
-    def _validate_heuristic_match(self, context: str, technique_id: str) -> bool:
-        """Validate heuristic matches more strictly."""
-        context_lower = context.lower()
-        
-        # Require threat intelligence context for heuristic matches
-        required_indicators = [
             'threat', 'adversary', 'attacker', 'malicious', 'attack', 'campaign',
-            'threat actor', 'cybersecurity', 'security', 'intrusion', 'compromise'
+            'cybersecurity', 'security', 'intrusion', 'compromise', 'intelligence'
         ]
-        
-        return any(indicator in context_lower for indicator in required_indicators)
+        return any(indicator in context_lower for indicator in security_indicators)
     
-    def _validate_and_filter_ttps(self, ttps: List[Dict]) -> List[Dict]:
-        """Validate and filter TTPs to ensure quality."""
-        validated_ttps = []
+    def _validate_extractions(self, ttps: List[Dict]) -> List[Dict]:
+        """Apply validation based on performance mode."""
+        if self.performance_mode == 'fast':
+            # Minimal validation for speed
+            return [ttp for ttp in ttps if ttp.get('confidence', 0) >= self.config.MIN_CONFIDENCE_THRESHOLD]
         
+        # More thorough validation for balanced/comprehensive modes
+        validated = []
         for ttp in ttps:
-            # Check confidence threshold
             if ttp.get('confidence', 0) < self.config.MIN_CONFIDENCE_THRESHOLD:
                 continue
             
-            # Additional validation based on match type
-            if ttp.get('match_type') == 'name':
-                # Stricter validation for name matches
-                if not self._final_name_validation(ttp):
-                    self.logger.debug(f"Rejected name match for {ttp['technique_id']}: failed final validation")
+            # Additional validation for comprehensive mode
+            if self.performance_mode == 'comprehensive':
+                if not self._validate_comprehensive(ttp):
                     continue
             
-            validated_ttps.append(ttp)
+            validated.append(ttp)
         
-        return validated_ttps
+        return validated
     
-    def _final_name_validation(self, ttp: Dict) -> bool:
-        """Final validation for technique name matches."""
-        context = ttp.get('context', '').lower()
-        technique_name = ttp.get('technique_name', '').lower()
+    def _validate_comprehensive(self, ttp: Dict) -> bool:
+        """Comprehensive validation for highest accuracy mode."""
+        # Check for negative contexts
+        matched_text = ttp.get('matched_text', '').lower()
         
-        # Ensure the match isn't in a clearly inappropriate context
-        inappropriate_contexts = [
-            'about us', 'contact', 'privacy', 'terms', 'legal', 'copyright',
-            'advertisement', 'sponsor', 'product description', 'service offering'
+        negative_patterns = [
+            'should not', 'avoid', 'not a valid', 'false positive',
+            'incorrectly identified', 'example of what not'
         ]
         
-        return not any(ctx in context for ctx in inappropriate_contexts)
-    
-    def _calculate_confidence(self, matched_text: str, technique_info: Dict, match_type: str, context: str = "") -> float:
-        """Calculate enhanced confidence score for a TTP match."""
-        # Base confidence by match type
-        if match_type == 'id':
-            confidence = 0.9  # High confidence for ID matches
-        elif match_type == 'name':
-            confidence = 0.6  # Lower base confidence for name matches
-        else:  # heuristic
-            confidence = 0.4  # Lower confidence for heuristic matches
+        for pattern in negative_patterns:
+            if pattern in matched_text:
+                return False
         
-        # Adjust based on context quality
-        context_lower = context.lower()
-        
-        # Boost confidence for strong MITRE context
-        if any(indicator in context_lower for indicator in ['mitre', 'att&ck', 'attack.mitre.org']):
-            confidence += 0.1
-        
-        # Boost confidence for technique ID references in context
-        if re.search(r'\bT\d{4}(?:\.\d{3})?\b', context):
-            confidence += 0.05
-        
-        # Boost confidence for threat intelligence context
-        if any(indicator in context_lower for indicator in ['threat actor', 'adversary', 'campaign', 'ttp']):
-            confidence += 0.05
-        
-        # Reduce confidence for very short matches
-        if len(matched_text) < 4:
-            confidence -= 0.1
-        
-        # Reduce confidence for matches in potentially inappropriate contexts
-        if any(indicator in context_lower for indicator in ['advertisement', 'product', 'service']):
-            confidence -= 0.2
-        
-        # Ensure confidence is between 0 and 1
-        return max(0.0, min(1.0, confidence))
+        return True
     
     def _parse_date(self, date_str: Optional[str]) -> Optional[str]:
-        """Parse date string into ISO format."""
+        """Simple date parsing."""
         if not date_str:
             return None
         
-        date_str = date_str.strip()
+        # Try ISO format first
+        try:
+            dt = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+            return dt.date().isoformat()
+        except:
+            pass
         
-        # Skip obviously invalid dates
-        if re.match(r'^\d{3}-\d{1,2}-\d{1,2}$', date_str):
-            return None
-        
-        # Try to parse various date formats
-        date_formats = [
-            '%Y-%m-%d', '%m/%d/%Y', '%d/%m/%Y', '%m-%d-%Y', '%d-%m-%Y',
-            '%B %d, %Y', '%d %B %Y', '%b %d %Y', '%b %d, %Y',
-            '%Y/%m/%d', '%d.%m.%Y', '%m.%d.%Y'
-        ]
-        
-        for fmt in date_formats:
+        # Try common formats
+        formats = ['%Y-%m-%d', '%m/%d/%Y', '%d/%m/%Y']
+        for fmt in formats:
             try:
                 dt = datetime.strptime(date_str, fmt)
-                if 1900 <= dt.year <= 2030:
+                if 1990 <= dt.year <= 2030:
                     return dt.date().isoformat()
-            except ValueError:
+            except:
                 continue
         
         return None
     
-    def get_technique_info(self, technique_id: str) -> Optional[Dict]:
-        """Get information about a specific technique."""
-        return self.techniques.get(technique_id)
+    def download_attack_data(self) -> bool:
+        """Download fresh MITRE ATT&CK data."""
+        try:
+            self.logger.info("Downloading MITRE ATT&CK data...")
+            
+            url = "https://raw.githubusercontent.com/mitre/cti/master/enterprise-attack/enterprise-attack.json"
+            
+            start_time = time.time()
+            response = requests.get(url, timeout=30)
+            response.raise_for_status()
+            download_time = time.time() - start_time
+            
+            # Validate data
+            data = response.json()
+            if not self._validate_attack_data(data):
+                return False
+            
+            # Save atomically
+            data_file = Path(self.config.ATTACK_DATA_FILE)
+            data_file.parent.mkdir(parents=True, exist_ok=True)
+            
+            temp_file = data_file.with_suffix('.tmp')
+            with open(temp_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2)
+            temp_file.replace(data_file)
+            
+            # Reload data
+            old_count = len(self.techniques)
+            self._load_mitre_data()
+            self._compile_patterns()
+            new_count = len(self.techniques)
+            
+            self.logger.info(f"Updated: {old_count} → {new_count} techniques "
+                           f"(downloaded in {download_time:.1f}s)")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Failed to download ATT&CK data: {e}")
+            return False
     
+    def _validate_attack_data(self, data: Dict) -> bool:
+        """Basic validation of downloaded data."""
+        if not isinstance(data, dict) or "objects" not in data:
+            return False
+        
+        attack_patterns = [obj for obj in data["objects"] if obj.get("type") == "attack-pattern"]
+        return len(attack_patterns) >= 100
+    
+    # Compatibility methods
     def get_all_techniques(self) -> Dict:
         """Get all loaded techniques."""
         return self.techniques.copy()
     
+    def get_technique_info(self, technique_id: str) -> Optional[Dict]:
+        """Get info for specific technique."""
+        return self.techniques.get(technique_id)
+    
+    def technique_exists(self, technique_id: str) -> bool:
+        """Check if technique exists."""
+        return technique_id in self.technique_ids
+    
     def get_techniques_by_tactic(self, tactic: str) -> Dict:
-        """Get all techniques for a specific tactic."""
+        """Get techniques filtered by tactic."""
         return {
             tid: info for tid, info in self.techniques.items()
             if info.get('tactic') == tactic
         }
+    
+    def get_performance_stats(self) -> Dict:
+        """Get performance statistics."""
+        stats = {
+            'performance_mode': self.performance_mode,
+            'techniques_loaded': len(self.techniques),
+            'technique_ids_available': len(self.technique_ids),
+            'extraction_methods': ['regex_id']
+        }
+        
+        if self.performance_mode in ['balanced', 'comprehensive']:
+            stats['extraction_methods'].append('name_context')
+            stats['name_patterns_compiled'] = len(self.technique_name_patterns)
+        
+        if self.performance_mode == 'comprehensive':
+            stats['extraction_methods'].append('heuristic')
+            stats['heuristic_patterns_compiled'] = len(self.heuristic_patterns)
+        
+        return stats

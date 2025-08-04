@@ -1,0 +1,1968 @@
+{
+  "actor_name": "Scattered-Spider",
+  "analysis_version": "v1.0",
+  "performance_mode": "balanced",
+  "total_reports": 14,
+  "reports_processed": 14,
+  "parsing_success_rate": 1.0,
+  "total_ttps": 220,
+  "unique_techniques": 107,
+  "unique_tactics": 14,
+  "sub_techniques_count": 54,
+  "timeline_data": {
+    "total_ttps": 220,
+    "dated_ttps": 100,
+    "date_range": {
+      "start": "2020-09-06",
+      "end": "2025-07-08",
+      "duration_days": 1766
+    },
+    "monthly_breakdown": {
+      "2020-09": {
+        "total_ttps": 7,
+        "unique_techniques": 7,
+        "unique_tactics": 5,
+        "unique_reports": 1,
+        "techniques": [
+          "T1213.002",
+          "T1062",
+          "T1114.002",
+          "T1003.003",
+          "T1555.005",
+          "T1566.004",
+          "T1567.002"
+        ],
+        "tactics": [
+          "exfiltration",
+          "credential-access",
+          "collection",
+          "initial-access",
+          "persistence"
+        ]
+      },
+      "2023-05": {
+        "total_ttps": 7,
+        "unique_techniques": 7,
+        "unique_tactics": 3,
+        "unique_reports": 1,
+        "techniques": [
+          "T1059.001",
+          "T1078.004",
+          "T1578",
+          "T1572",
+          "T1078",
+          "T1059",
+          "T1153"
+        ],
+        "tactics": [
+          "command-and-control",
+          "execution",
+          "defense-evasion"
+        ]
+      },
+      "2023-09": {
+        "total_ttps": 1,
+        "unique_techniques": 1,
+        "unique_tactics": 1,
+        "unique_reports": 1,
+        "techniques": [
+          "T1588.006"
+        ],
+        "tactics": [
+          "resource-development"
+        ]
+      },
+      "2025-05": {
+        "total_ttps": 28,
+        "unique_techniques": 28,
+        "unique_tactics": 11,
+        "unique_reports": 1,
+        "techniques": [
+          "T1656",
+          "T1530",
+          "T1556.006",
+          "T1068",
+          "T1003",
+          "T1213.002",
+          "T1482",
+          "T1217",
+          "T1606",
+          "T1219",
+          "T1083",
+          "T1018",
+          "T1114",
+          "T1486",
+          "T1490",
+          "T1552.001",
+          "T1538",
+          "T1562.001",
+          "T1074",
+          "T1566.004",
+          "T1204",
+          "T1213.005",
+          "T1539",
+          "T1021.007",
+          "T1484.002",
+          "T1578.002",
+          "T1003.001",
+          "T1567.002"
+        ],
+        "tactics": [
+          "privilege-escalation",
+          "exfiltration",
+          "execution",
+          "lateral-movement",
+          "credential-access",
+          "collection",
+          "impact",
+          "command-and-control",
+          "discovery",
+          "initial-access",
+          "defense-evasion"
+        ]
+      },
+      "2025-06": {
+        "total_ttps": 44,
+        "unique_techniques": 44,
+        "unique_tactics": 14,
+        "unique_reports": 1,
+        "techniques": [
+          "T1656",
+          "T1530",
+          "T1566",
+          "T1598",
+          "T1213",
+          "T1484",
+          "T1069",
+          "T1657",
+          "T1068",
+          "T1003",
+          "T1098",
+          "T1069.003",
+          "T1588",
+          "T1552",
+          "T1090",
+          "T1078",
+          "T1217",
+          "T1564",
+          "T1219",
+          "T1083",
+          "T1580",
+          "T1114",
+          "T1621",
+          "T1021",
+          "T1018",
+          "T1486",
+          "T1190",
+          "T1538",
+          "T1556",
+          "T1074",
+          "T1006",
+          "T1046",
+          "T1133",
+          "T1567",
+          "T1553",
+          "T1589",
+          "T1539",
+          "T1578",
+          "T1572",
+          "T1102",
+          "T1087",
+          "T1136",
+          "T1047",
+          "T1105"
+        ],
+        "tactics": [
+          "privilege-escalation",
+          "exfiltration",
+          "execution",
+          "credential-access",
+          "lateral-movement",
+          "collection",
+          "impact",
+          "initial-access",
+          "resource-development",
+          "reconnaissance",
+          "command-and-control",
+          "discovery",
+          "persistence",
+          "defense-evasion"
+        ]
+      },
+      "2025-07": {
+        "total_ttps": 13,
+        "unique_techniques": 13,
+        "unique_tactics": 6,
+        "unique_reports": 1,
+        "techniques": [
+          "T1082",
+          "T1083",
+          "T1057",
+          "T1547.001",
+          "T1528",
+          "T1566.002",
+          "T1027",
+          "T1036",
+          "T1518",
+          "T1562.001",
+          "T1133",
+          "T1153",
+          "T1140"
+        ],
+        "tactics": [
+          "credential-access",
+          "initial-access",
+          "execution",
+          "discovery",
+          "persistence",
+          "defense-evasion"
+        ]
+      }
+    },
+    "technique_evolution": {
+      "T1566.004": {
+        "first_seen": "2020-09-06",
+        "last_seen": "2025-05-08",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2020-09-06",
+            "source": "https://unit42.paloaltonetworks.com/muddled-libra",
+            "confidence": 0.93
+          },
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 1705,
+        "avg_confidence": 0.915
+      },
+      "T1003.003": {
+        "first_seen": "2020-09-06",
+        "last_seen": "2020-09-06",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2020-09-06",
+            "source": "https://unit42.paloaltonetworks.com/muddled-libra",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1555.005": {
+        "first_seen": "2020-09-06",
+        "last_seen": "2020-09-06",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2020-09-06",
+            "source": "https://unit42.paloaltonetworks.com/muddled-libra",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1114.002": {
+        "first_seen": "2020-09-06",
+        "last_seen": "2020-09-06",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2020-09-06",
+            "source": "https://unit42.paloaltonetworks.com/muddled-libra",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1213.002": {
+        "first_seen": "2020-09-06",
+        "last_seen": "2025-05-08",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2020-09-06",
+            "source": "https://unit42.paloaltonetworks.com/muddled-libra",
+            "confidence": 0.9
+          },
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 1705,
+        "avg_confidence": 0.9
+      },
+      "T1567.002": {
+        "first_seen": "2020-09-06",
+        "last_seen": "2025-05-08",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2020-09-06",
+            "source": "https://unit42.paloaltonetworks.com/muddled-libra",
+            "confidence": 0.9
+          },
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 1705,
+        "avg_confidence": 0.9
+      },
+      "T1062": {
+        "first_seen": "2020-09-06",
+        "last_seen": "2020-09-06",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2020-09-06",
+            "source": "https://unit42.paloaltonetworks.com/muddled-libra",
+            "confidence": 0.65
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.65
+      },
+      "T1572": {
+        "first_seen": "2023-05-16",
+        "last_seen": "2025-06-24",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2023-05-16",
+            "source": "https://cloud.google.com/blog/topics/threat-intelligence/sim-swapping-abuse-azure-serial",
+            "confidence": 1.0
+          },
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 770,
+        "avg_confidence": 0.95
+      },
+      "T1578": {
+        "first_seen": "2023-05-16",
+        "last_seen": "2025-06-24",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2023-05-16",
+            "source": "https://cloud.google.com/blog/topics/threat-intelligence/sim-swapping-abuse-azure-serial",
+            "confidence": 1.0
+          },
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 770,
+        "avg_confidence": 0.95
+      },
+      "T1059": {
+        "first_seen": "2023-05-16",
+        "last_seen": "2023-05-16",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2023-05-16",
+            "source": "https://cloud.google.com/blog/topics/threat-intelligence/sim-swapping-abuse-azure-serial",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1078": {
+        "first_seen": "2023-05-16",
+        "last_seen": "2025-06-24",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2023-05-16",
+            "source": "https://cloud.google.com/blog/topics/threat-intelligence/sim-swapping-abuse-azure-serial",
+            "confidence": 0.9
+          },
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 770,
+        "avg_confidence": 0.9
+      },
+      "T1059.001": {
+        "first_seen": "2023-05-16",
+        "last_seen": "2023-05-16",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2023-05-16",
+            "source": "https://cloud.google.com/blog/topics/threat-intelligence/sim-swapping-abuse-azure-serial",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1078.004": {
+        "first_seen": "2023-05-16",
+        "last_seen": "2023-05-16",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2023-05-16",
+            "source": "https://cloud.google.com/blog/topics/threat-intelligence/sim-swapping-abuse-azure-serial",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1153": {
+        "first_seen": "2023-05-16",
+        "last_seen": "2025-07-08",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2023-05-16",
+            "source": "https://cloud.google.com/blog/topics/threat-intelligence/sim-swapping-abuse-azure-serial",
+            "confidence": 0.75
+          },
+          {
+            "date": "2025-07-08",
+            "source": "https://www.picussecurity.com/resource/blog/tracking-scattered-spider-through-identity-attacks-and-token-theft",
+            "confidence": 0.6
+          }
+        ],
+        "activity_span_days": 784,
+        "avg_confidence": 0.675
+      },
+      "T1588.006": {
+        "first_seen": "2023-09-04",
+        "last_seen": "2023-09-04",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2023-09-04",
+            "source": "https://www.guidepointsecurity.com/blog/worldwide-web-an-analysis-of-tactics-and-techniques-attributed-to-scattered-spider/",
+            "confidence": 0.6
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.6
+      },
+      "T1068": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-06-24",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.93
+          },
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 47,
+        "avg_confidence": 0.915
+      },
+      "T1538": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-06-24",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.93
+          },
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 47,
+        "avg_confidence": 0.915
+      },
+      "T1021.007": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-05-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.93
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.93
+      },
+      "T1578.002": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-05-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.93
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.93
+      },
+      "T1219": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-06-24",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.9
+          },
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 47,
+        "avg_confidence": 0.9
+      },
+      "T1204": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-05-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1217": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-06-24",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.9
+          },
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 1.0
+          }
+        ],
+        "activity_span_days": 47,
+        "avg_confidence": 0.95
+      },
+      "T1539": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-06-24",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.9
+          },
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 47,
+        "avg_confidence": 0.9
+      },
+      "T1656": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-06-24",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.9
+          },
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 47,
+        "avg_confidence": 0.9
+      },
+      "T1562.001": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-07-08",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.9
+          },
+          {
+            "date": "2025-07-08",
+            "source": "https://www.picussecurity.com/resource/blog/tracking-scattered-spider-through-identity-attacks-and-token-theft",
+            "confidence": 1.0
+          }
+        ],
+        "activity_span_days": 61,
+        "avg_confidence": 0.95
+      },
+      "T1003.001": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-05-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1556.006": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-05-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1606": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-05-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1484.002": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-05-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1490": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-05-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1552.001": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-05-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1018": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-06-24",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.9
+          },
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 47,
+        "avg_confidence": 0.9
+      },
+      "T1482": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-05-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1083": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-07-08",
+        "frequency": 3,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.9
+          },
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          },
+          {
+            "date": "2025-07-08",
+            "source": "https://www.picussecurity.com/resource/blog/tracking-scattered-spider-through-identity-attacks-and-token-theft",
+            "confidence": 1.0
+          }
+        ],
+        "activity_span_days": 61,
+        "avg_confidence": 0.9333333333333333
+      },
+      "T1074": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-06-24",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.9
+          },
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 47,
+        "avg_confidence": 0.9
+      },
+      "T1530": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-06-24",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.9
+          },
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 47,
+        "avg_confidence": 0.9
+      },
+      "T1486": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-06-24",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.9
+          },
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 47,
+        "avg_confidence": 0.9
+      },
+      "T1114": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-06-24",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.9
+          },
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 47,
+        "avg_confidence": 0.9
+      },
+      "T1213.005": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-05-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1003": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-06-24",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2025-05-08",
+            "source": "https://www.cohesity.com/blogs/scattered-spider-attack-what-you-need-to-know-about-the-uk-retail-threat/",
+            "confidence": 0.68
+          },
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 47,
+        "avg_confidence": 0.79
+      },
+      "T1087": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-06-24",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 1.0
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 1.0
+      },
+      "T1098": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-06-24",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 1.0
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 1.0
+      },
+      "T1580": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-06-24",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1136": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-06-24",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1213": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-06-24",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1006": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-06-24",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1484": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-06-24",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1567": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-06-24",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1190": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-06-24",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1133": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-07-08",
+        "frequency": 2,
+        "timeline": [
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          },
+          {
+            "date": "2025-07-08",
+            "source": "https://www.picussecurity.com/resource/blog/tracking-scattered-spider-through-identity-attacks-and-token-theft",
+            "confidence": 1.0
+          }
+        ],
+        "activity_span_days": 14,
+        "avg_confidence": 0.95
+      },
+      "T1657": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-06-24",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1589": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-06-24",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1564": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-06-24",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1105": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-06-24",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1556": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-06-24",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1621": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-06-24",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1046": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-06-24",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1588": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-06-24",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1069": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-06-24",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1566": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-06-24",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1598": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-06-24",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1090": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-06-24",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1021": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-06-24",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1553": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-06-24",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1552": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-06-24",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1102": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-06-24",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1047": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-06-24",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      },
+      "T1069.003": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-06-24",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-06-24",
+            "source": "https://www.bitsight.com/blog/who-is-scattered-spider-ransomware-group",
+            "confidence": 0.65
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.65
+      },
+      "T1566.002": {
+        "first_seen": "2025-07-08",
+        "last_seen": "2025-07-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-07-08",
+            "source": "https://www.picussecurity.com/resource/blog/tracking-scattered-spider-through-identity-attacks-and-token-theft",
+            "confidence": 1.0
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 1.0
+      },
+      "T1082": {
+        "first_seen": "2025-07-08",
+        "last_seen": "2025-07-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-07-08",
+            "source": "https://www.picussecurity.com/resource/blog/tracking-scattered-spider-through-identity-attacks-and-token-theft",
+            "confidence": 1.0
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 1.0
+      },
+      "T1057": {
+        "first_seen": "2025-07-08",
+        "last_seen": "2025-07-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-07-08",
+            "source": "https://www.picussecurity.com/resource/blog/tracking-scattered-spider-through-identity-attacks-and-token-theft",
+            "confidence": 1.0
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 1.0
+      },
+      "T1518": {
+        "first_seen": "2025-07-08",
+        "last_seen": "2025-07-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-07-08",
+            "source": "https://www.picussecurity.com/resource/blog/tracking-scattered-spider-through-identity-attacks-and-token-theft",
+            "confidence": 1.0
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 1.0
+      },
+      "T1547.001": {
+        "first_seen": "2025-07-08",
+        "last_seen": "2025-07-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-07-08",
+            "source": "https://www.picussecurity.com/resource/blog/tracking-scattered-spider-through-identity-attacks-and-token-theft",
+            "confidence": 1.0
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 1.0
+      },
+      "T1027": {
+        "first_seen": "2025-07-08",
+        "last_seen": "2025-07-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-07-08",
+            "source": "https://www.picussecurity.com/resource/blog/tracking-scattered-spider-through-identity-attacks-and-token-theft",
+            "confidence": 1.0
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 1.0
+      },
+      "T1140": {
+        "first_seen": "2025-07-08",
+        "last_seen": "2025-07-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-07-08",
+            "source": "https://www.picussecurity.com/resource/blog/tracking-scattered-spider-through-identity-attacks-and-token-theft",
+            "confidence": 1.0
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 1.0
+      },
+      "T1036": {
+        "first_seen": "2025-07-08",
+        "last_seen": "2025-07-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-07-08",
+            "source": "https://www.picussecurity.com/resource/blog/tracking-scattered-spider-through-identity-attacks-and-token-theft",
+            "confidence": 1.0
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 1.0
+      },
+      "T1528": {
+        "first_seen": "2025-07-08",
+        "last_seen": "2025-07-08",
+        "frequency": 1,
+        "timeline": [
+          {
+            "date": "2025-07-08",
+            "source": "https://www.picussecurity.com/resource/blog/tracking-scattered-spider-through-identity-attacks-and-token-theft",
+            "confidence": 0.9
+          }
+        ],
+        "activity_span_days": 0,
+        "avg_confidence": 0.9
+      }
+    },
+    "tactic_evolution": {
+      "initial-access": {
+        "first_seen": "2020-09-06",
+        "last_seen": "2025-07-08",
+        "frequency": 5,
+        "unique_techniques": 4,
+        "techniques_used": [
+          "T1566.002",
+          "T1566.004",
+          "T1566",
+          "T1190"
+        ],
+        "activity_span_days": 1766
+      },
+      "credential-access": {
+        "first_seen": "2020-09-06",
+        "last_seen": "2025-07-08",
+        "frequency": 14,
+        "unique_techniques": 12,
+        "techniques_used": [
+          "T1539",
+          "T1556.006",
+          "T1621",
+          "T1552",
+          "T1528",
+          "T1003.003",
+          "T1552.001",
+          "T1555.005",
+          "T1556",
+          "T1003.001",
+          "T1606",
+          "T1003"
+        ],
+        "activity_span_days": 1766
+      },
+      "collection": {
+        "first_seen": "2020-09-06",
+        "last_seen": "2025-06-24",
+        "frequency": 11,
+        "unique_techniques": 7,
+        "techniques_used": [
+          "T1213.002",
+          "T1213.005",
+          "T1530",
+          "T1114",
+          "T1213",
+          "T1114.002",
+          "T1074"
+        ],
+        "activity_span_days": 1752
+      },
+      "exfiltration": {
+        "first_seen": "2020-09-06",
+        "last_seen": "2025-06-24",
+        "frequency": 3,
+        "unique_techniques": 2,
+        "techniques_used": [
+          "T1567",
+          "T1567.002"
+        ],
+        "activity_span_days": 1752
+      },
+      "persistence": {
+        "first_seen": "2020-09-06",
+        "last_seen": "2025-07-08",
+        "frequency": 6,
+        "unique_techniques": 5,
+        "techniques_used": [
+          "T1547.001",
+          "T1062",
+          "T1133",
+          "T1136",
+          "T1098"
+        ],
+        "activity_span_days": 1766
+      },
+      "command-and-control": {
+        "first_seen": "2023-05-16",
+        "last_seen": "2025-06-24",
+        "frequency": 7,
+        "unique_techniques": 5,
+        "techniques_used": [
+          "T1572",
+          "T1090",
+          "T1102",
+          "T1219",
+          "T1105"
+        ],
+        "activity_span_days": 770
+      },
+      "defense-evasion": {
+        "first_seen": "2023-05-16",
+        "last_seen": "2025-07-08",
+        "frequency": 18,
+        "unique_techniques": 14,
+        "techniques_used": [
+          "T1656",
+          "T1078.004",
+          "T1578",
+          "T1027",
+          "T1484.002",
+          "T1484",
+          "T1078",
+          "T1036",
+          "T1562.001",
+          "T1006",
+          "T1578.002",
+          "T1564",
+          "T1553",
+          "T1140"
+        ],
+        "activity_span_days": 784
+      },
+      "execution": {
+        "first_seen": "2023-05-16",
+        "last_seen": "2025-07-08",
+        "frequency": 6,
+        "unique_techniques": 5,
+        "techniques_used": [
+          "T1204",
+          "T1153",
+          "T1059.001",
+          "T1059",
+          "T1047"
+        ],
+        "activity_span_days": 784
+      },
+      "resource-development": {
+        "first_seen": "2023-09-04",
+        "last_seen": "2025-06-24",
+        "frequency": 2,
+        "unique_techniques": 2,
+        "techniques_used": [
+          "T1588.006",
+          "T1588"
+        ],
+        "activity_span_days": 659
+      },
+      "privilege-escalation": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-06-24",
+        "frequency": 2,
+        "unique_techniques": 1,
+        "techniques_used": [
+          "T1068"
+        ],
+        "activity_span_days": 47
+      },
+      "discovery": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-07-08",
+        "frequency": 18,
+        "unique_techniques": 13,
+        "techniques_used": [
+          "T1069.003",
+          "T1082",
+          "T1083",
+          "T1057",
+          "T1018",
+          "T1580",
+          "T1482",
+          "T1069",
+          "T1518",
+          "T1538",
+          "T1217",
+          "T1046",
+          "T1087"
+        ],
+        "activity_span_days": 61
+      },
+      "lateral-movement": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-06-24",
+        "frequency": 2,
+        "unique_techniques": 2,
+        "techniques_used": [
+          "T1021",
+          "T1021.007"
+        ],
+        "activity_span_days": 47
+      },
+      "impact": {
+        "first_seen": "2025-05-08",
+        "last_seen": "2025-06-24",
+        "frequency": 4,
+        "unique_techniques": 3,
+        "techniques_used": [
+          "T1490",
+          "T1657",
+          "T1486"
+        ],
+        "activity_span_days": 47
+      },
+      "reconnaissance": {
+        "first_seen": "2025-06-24",
+        "last_seen": "2025-06-24",
+        "frequency": 2,
+        "unique_techniques": 2,
+        "techniques_used": [
+          "T1589",
+          "T1598"
+        ],
+        "activity_span_days": 0
+      }
+    },
+    "campaign_phases": [
+      {
+        "phase_number": 1,
+        "start_date": "2020-09-06",
+        "end_date": "2020-10-06",
+        "duration_days": 30,
+        "ttp_count": 7,
+        "primary_techniques": [
+          {
+            "item": "T1566.004",
+            "count": 1
+          },
+          {
+            "item": "T1003.003",
+            "count": 1
+          },
+          {
+            "item": "T1555.005",
+            "count": 1
+          },
+          {
+            "item": "T1114.002",
+            "count": 1
+          },
+          {
+            "item": "T1213.002",
+            "count": 1
+          }
+        ],
+        "primary_tactics": [
+          {
+            "item": "credential-access",
+            "count": 2
+          },
+          {
+            "item": "collection",
+            "count": 2
+          },
+          {
+            "item": "initial-access",
+            "count": 1
+          }
+        ],
+        "phase_characteristics": {
+          "phase_type": "mixed_activity",
+          "intensity": 7,
+          "complexity": 7,
+          "dominant_tactic": "credential-access"
+        }
+      },
+      {
+        "phase_number": 2,
+        "start_date": "2023-04-24",
+        "end_date": "2023-05-24",
+        "duration_days": 30,
+        "ttp_count": 7,
+        "primary_techniques": [
+          {
+            "item": "T1572",
+            "count": 1
+          },
+          {
+            "item": "T1578",
+            "count": 1
+          },
+          {
+            "item": "T1059",
+            "count": 1
+          },
+          {
+            "item": "T1078",
+            "count": 1
+          },
+          {
+            "item": "T1059.001",
+            "count": 1
+          }
+        ],
+        "primary_tactics": [
+          {
+            "item": "defense-evasion",
+            "count": 3
+          },
+          {
+            "item": "execution",
+            "count": 3
+          },
+          {
+            "item": "command-and-control",
+            "count": 1
+          }
+        ],
+        "phase_characteristics": {
+          "phase_type": "mixed_activity",
+          "intensity": 7,
+          "complexity": 7,
+          "dominant_tactic": "defense-evasion"
+        }
+      },
+      {
+        "phase_number": 3,
+        "start_date": "2023-08-22",
+        "end_date": "2023-09-21",
+        "duration_days": 30,
+        "ttp_count": 1,
+        "primary_techniques": [
+          {
+            "item": "T1588.006",
+            "count": 1
+          }
+        ],
+        "primary_tactics": [
+          {
+            "item": "resource-development",
+            "count": 1
+          }
+        ],
+        "phase_characteristics": {
+          "phase_type": "mixed_activity",
+          "intensity": 1,
+          "complexity": 1,
+          "dominant_tactic": "resource-development"
+        }
+      },
+      {
+        "phase_number": 4,
+        "start_date": "2025-04-13",
+        "end_date": "2025-05-13",
+        "duration_days": 30,
+        "ttp_count": 28,
+        "primary_techniques": [
+          {
+            "item": "T1068",
+            "count": 1
+          },
+          {
+            "item": "T1538",
+            "count": 1
+          },
+          {
+            "item": "T1021.007",
+            "count": 1
+          },
+          {
+            "item": "T1578.002",
+            "count": 1
+          },
+          {
+            "item": "T1566.004",
+            "count": 1
+          }
+        ],
+        "primary_tactics": [
+          {
+            "item": "credential-access",
+            "count": 6
+          },
+          {
+            "item": "discovery",
+            "count": 5
+          },
+          {
+            "item": "collection",
+            "count": 5
+          }
+        ],
+        "phase_characteristics": {
+          "phase_type": "mixed_activity",
+          "intensity": 28,
+          "complexity": 28,
+          "dominant_tactic": "credential-access"
+        }
+      },
+      {
+        "phase_number": 5,
+        "start_date": "2025-06-12",
+        "end_date": "2025-07-08",
+        "duration_days": 26,
+        "ttp_count": 44,
+        "primary_techniques": [
+          {
+            "item": "T1087",
+            "count": 1
+          },
+          {
+            "item": "T1098",
+            "count": 1
+          },
+          {
+            "item": "T1217",
+            "count": 1
+          },
+          {
+            "item": "T1580",
+            "count": 1
+          },
+          {
+            "item": "T1538",
+            "count": 1
+          }
+        ],
+        "primary_tactics": [
+          {
+            "item": "discovery",
+            "count": 9
+          },
+          {
+            "item": "defense-evasion",
+            "count": 7
+          },
+          {
+            "item": "command-and-control",
+            "count": 5
+          }
+        ],
+        "phase_characteristics": {
+          "phase_type": "mixed_activity",
+          "intensity": 44,
+          "complexity": 44,
+          "dominant_tactic": "discovery"
+        }
+      }
+    ],
+    "trend_analysis": {
+      "activity_trend": "increasing",
+      "technique_diversity_trend": "increasing",
+      "tactic_diversity_trend": "increasing",
+      "peak_activity_month": "2025-06",
+      "activity_volatility": 16.25628083746915
+    },
+    "technique_lifecycle": {
+      "T1083": {
+        "introduction_phase": [
+          "2025-05"
+        ],
+        "peak_month": "2025-05",
+        "peak_usage": 1,
+        "decline_phase": [
+          "2025-06",
+          "2025-07"
+        ],
+        "lifecycle_stage": "declining"
+      }
+    },
+    "activity_patterns": {
+      "weekday_distribution": {
+        "Monday": 1,
+        "Tuesday": 64,
+        "Wednesday": 0,
+        "Thursday": 28,
+        "Friday": 0,
+        "Saturday": 0,
+        "Sunday": 7
+      },
+      "month_distribution": {
+        "Month_1": 0,
+        "Month_2": 0,
+        "Month_3": 0,
+        "Month_4": 0,
+        "Month_5": 35,
+        "Month_6": 44,
+        "Month_7": 13,
+        "Month_8": 0,
+        "Month_9": 8,
+        "Month_10": 0,
+        "Month_11": 0,
+        "Month_12": 0
+      },
+      "activity_gaps": [
+        {
+          "start_date": "2020-09-06",
+          "end_date": "2023-05-16",
+          "gap_days": 982
+        },
+        {
+          "start_date": "2023-05-16",
+          "end_date": "2023-09-04",
+          "gap_days": 111
+        },
+        {
+          "start_date": "2023-09-04",
+          "end_date": "2025-05-08",
+          "gap_days": 612
+        },
+        {
+          "start_date": "2025-05-08",
+          "end_date": "2025-06-24",
+          "gap_days": 47
+        }
+      ],
+      "most_active_weekday": "Tuesday",
+      "most_active_month": 6
+    }
+  },
+  "date_range": {
+    "start": "2020-09-06",
+    "end": "2025-07-08",
+    "duration_days": 1766
+  },
+  "extraction_stats": {
+    "reports_with_ttps": 14,
+    "total_matches": 220,
+    "high_confidence_matches": 207,
+    "match_types": {
+      "regex_id": 206,
+      "name_context": 14
+    },
+    "performance_mode": "balanced"
+  },
+  "confidence_stats": {
+    "average": 0.902,
+    "min": 0.6,
+    "max": 1.0,
+    "high_confidence_count": 207
+  },
+  "performance_metrics": {
+    "processing_time_seconds": 37.75,
+    "reports_per_second": 0.3708477149612219,
+    "ttps_per_second": 5.8276069493906295,
+    "mode_stats": {
+      "performance_mode": "balanced",
+      "techniques_loaded": 823,
+      "technique_ids_available": 823,
+      "extraction_methods": [
+        "regex_id",
+        "name_context"
+      ],
+      "name_patterns_compiled": 565
+    }
+  },
+  "visualizations": {
+    "heatmap": "output/Scattered-Spider/ttp_heatmap.png",
+    "timeline": "output/Scattered-Spider/ttp_timeline.png",
+    "frequency": "output/Scattered-Spider/ttp_frequency.png"
+  },
+  "output_directory": "output/Scattered-Spider",
+  "parsing_errors": [],
+  "system_info": {
+    "analyzer": true,
+    "performance_mode": "balanced",
+    "features_enabled": [
+      "regex_id_extraction",
+      "name_context_extraction"
+    ],
+    "analysis_timestamp": 1754336236.938386
+  }
+}

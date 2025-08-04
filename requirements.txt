@@ -11,7 +11,13 @@ numpy>=1.21.0
 # Visualization
 matplotlib>=3.5.0
 seaborn>=0.11.0
+networkx>=3.5.0
 
 # Optional but recommended
 lxml>=4.9.0
 html5lib>=1.1
+
+# Development dependencies (optional)
+pytest>=7.2.0
+black>=22.10.0
+flake8>=5.0.0

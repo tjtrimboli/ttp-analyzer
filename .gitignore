@@ -132,7 +132,7 @@ dmypy.json
 output/
 logs/
 data/attack_data.json
-*.png
+*/output/*/.png
 *.pdf
 .DS_Store
 
@@ -147,6 +147,7 @@ data/attack_data.json
 tmp/
 temp/
 *.tmp
+*.bak
 
 # Configuration overrides
 config_local.yaml
