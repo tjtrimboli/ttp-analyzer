@@ -1,5 +1,6 @@
 """
-Visualization Engine Module for creating TTP analysis charts and graphs.
+Enhanced Visualization Engine Module with MITRE ATT&CK Kill Chain Ordered Heatmap
+Creates TTP analysis charts and graphs with proper tactical ordering.
 """
 
 import logging
@@ -14,12 +15,48 @@ import pandas as pd
 
 
 class Visualizer:
-    """Engine for creating visualizations of TTP analysis results."""
+    """Enhanced visualization engine with kill chain ordered heatmaps."""
     
     def __init__(self, config):
-        """Initialize the visualization engine."""
+        """Initialize the enhanced visualization engine."""
         self.config = config
         self.logger = logging.getLogger(__name__)
+        
+        # Define MITRE ATT&CK kill chain order
+        self.kill_chain_order = [
+            'reconnaissance',
+            'resource-development',
+            'initial-access',
+            'execution',
+            'persistence',
+            'privilege-escalation',
+            'defense-evasion',
+            'credential-access',
+            'discovery',
+            'lateral-movement',
+            'collection',
+            'command-and-control',
+            'exfiltration',
+            'impact'
+        ]
+        
+        # Mapping of display names for better visualization
+        self.tactic_display_names = {
+            'reconnaissance': 'Reconnaissance',
+            'resource-development': 'Resource Development',
+            'initial-access': 'Initial Access',
+            'execution': 'Execution',
+            'persistence': 'Persistence',  
+            'privilege-escalation': 'Privilege Escalation',
+            'defense-evasion': 'Defense Evasion',
+            'credential-access': 'Credential Access',
+            'discovery': 'Discovery',
+            'lateral-movement': 'Lateral Movement',
+            'collection': 'Collection',
+            'command-and-control': 'Command and Control',
+            'exfiltration': 'Exfiltration',
+            'impact': 'Impact'
+        }
         
         # Set matplotlib style
         plt.style.use('seaborn-v0_8')
@@ -33,8 +70,8 @@ class Visualizer:
         plt.rcParams['font.size'] = 10
         
     def create_ttp_heatmap(self, ttps: List[Dict], output_path: Path, title: str = "TTP Heatmap") -> Path:
-        """Create a heatmap showing TTP frequency by tactic and technique."""
-        self.logger.info(f"Creating TTP heatmap with {len(ttps)} TTPs")
+        """Create a kill chain ordered heatmap showing TTP frequency by tactic and technique."""
+        self.logger.info(f"Creating kill chain ordered TTP heatmap with {len(ttps)} TTPs")
         
         if not ttps:
             self.logger.warning("No TTPs provided for heatmap creation")
@@ -47,74 +84,115 @@ class Visualizer:
         for ttp in ttps:
             technique_id = ttp.get('technique_id', 'Unknown')
             technique_name = ttp.get('technique_name', technique_id)
-            tactic = ttp.get('tactic', 'unknown').replace('-', ' ').title()
+            tactic = ttp.get('tactic', 'unknown').lower()
             
             # Create a combined label (shorter for better display)
             technique_label = f"{technique_id}"
             if technique_name and len(technique_name) < 30:
                 technique_label += f"\n{technique_name}"
             
-            ttp_key = (tactic, technique_label)
+            # Use display name for tactic
+            tactic_display = self.tactic_display_names.get(tactic, tactic.replace('-', ' ').title())
+            
+            ttp_key = (tactic_display, technique_label)
             ttp_counts[ttp_key] += 1
-            tactic_technique_map[tactic].append(technique_label)
+            tactic_technique_map[tactic_display].append(technique_label)
         
         if not ttp_counts:
             return self._create_empty_chart(output_path, "No Valid TTPs Found")
         
-        # Create DataFrame for heatmap
-        tactics = sorted(set(tactic for tactic, _ in ttp_counts.keys()))
-        techniques = sorted(set(technique for _, technique in ttp_counts.keys()))
+        # Order tactics according to kill chain
+        all_tactics = set(tactic for tactic, _ in ttp_counts.keys())
+        ordered_tactics = self._order_tactics_by_kill_chain(all_tactics)
+        
+        # Get all techniques
+        all_techniques = sorted(set(technique for _, technique in ttp_counts.keys()))
         
         # Limit techniques for better visualization
-        if len(techniques) > 30:
+        if len(all_techniques) > 30:
             # Keep only top techniques by frequency
             technique_totals = defaultdict(int)
             for (tactic, technique), count in ttp_counts.items():
                 technique_totals[technique] += count
             
             top_techniques = sorted(technique_totals.items(), key=lambda x: x[1], reverse=True)[:30]
-            techniques = [t[0] for t in top_techniques]
+            all_techniques = [t[0] for t in top_techniques]
         
-        # Create matrix
-        matrix = np.zeros((len(techniques), len(tactics)))
+        # Create matrix with proper ordering
+        matrix = np.zeros((len(all_techniques), len(ordered_tactics)))
         
-        for i, technique in enumerate(techniques):
-            for j, tactic in enumerate(tactics):
+        for i, technique in enumerate(all_techniques):
+            for j, tactic in enumerate(ordered_tactics):
                 count = ttp_counts.get((tactic, technique), 0)
                 matrix[i, j] = count
         
-        # Create the heatmap
-        fig, ax = plt.subplots(figsize=(max(12, len(tactics) * 1.5), max(8, len(techniques) * 0.4)))
+        # Create the clean heatmap with larger size
+        fig, ax = plt.subplots(figsize=(max(18, len(ordered_tactics) * 1.6), max(14, len(all_techniques) * 0.5)))
         
-        # Create heatmap with custom colormap
+        # Create heatmap with enhanced styling
         heatmap = sns.heatmap(
             matrix,
-            xticklabels=tactics,
-            yticklabels=techniques,
+            xticklabels=ordered_tactics,
+            yticklabels=all_techniques,
             annot=True,
             fmt='g',
             cmap='YlOrRd',
-            cbar_kws={'label': 'Frequency'},
+            cbar_kws={'label': 'Frequency', 'shrink': 0.8},
             square=False,
-            ax=ax
+            ax=ax,
+            linewidths=0.5,
+            linecolor='white'
         )
         
-        # Customize the plot
-        ax.set_title(title, fontsize=16, fontweight='bold', pad=20)
-        ax.set_xlabel('MITRE ATT&CK Tactics', fontsize=12, fontweight='bold')
-        ax.set_ylabel('Techniques', fontsize=12, fontweight='bold')
+        # Customize the plot with clean styling
+        ax.set_title(title, fontsize=18, fontweight='bold', pad=25)
+        ax.set_xlabel('Tactics', fontsize=14, fontweight='bold', labelpad=15)
+        ax.set_ylabel('Techniques', fontsize=14, fontweight='bold', labelpad=15)
         
         # Rotate labels for better readability
-        plt.xticks(rotation=45, ha='right')
-        plt.yticks(rotation=0, fontsize=8)
+        plt.xticks(rotation=45, ha='right', fontsize=11)
+        plt.yticks(rotation=0, fontsize=10)
         
-        # Adjust layout and save
+        # Add summary statistics in bottom left corner
+        total_ttps = len(ttps)
+        unique_techniques = len(all_techniques)
+        unique_tactics = len(ordered_tactics)
+        
+        # Position stats box in bottom left, outside the plot area
+        stats_text = f'Total TTPs: {total_ttps}\nUnique Techniques: {unique_techniques}\nTactics Used: {unique_tactics}'
+        
+        # Place stats box in the bottom left margin area
+        fig.text(0.02, 0.02, stats_text, ha='left', va='bottom', fontsize=11,
+                bbox=dict(boxstyle='round,pad=0.5', facecolor='white', alpha=0.9, 
+                         edgecolor='gray', linewidth=1))
+        
+        # Adjust layout for clean appearance
         plt.tight_layout()
-        plt.savefig(output_path, bbox_inches='tight', dpi=300)
+        plt.subplots_adjust(bottom=0.15, left=0.12)  # Make room for stats and labels
+        plt.savefig(output_path, bbox_inches='tight', dpi=300, facecolor='white')
         plt.close()
         
-        self.logger.info(f"TTP heatmap saved to: {output_path}")
+        self.logger.info(f"Kill chain ordered TTP heatmap saved to: {output_path}")
         return output_path
+    
+    def _order_tactics_by_kill_chain(self, tactics: set) -> List[str]:
+        """Order tactics according to MITRE ATT&CK kill chain sequence."""
+        ordered_tactics = []
+        
+        # First, add tactics in kill chain order
+        for kill_chain_tactic in self.kill_chain_order:
+            display_name = self.tactic_display_names.get(kill_chain_tactic, 
+                                                        kill_chain_tactic.replace('-', ' ').title())
+            if display_name in tactics:
+                ordered_tactics.append(display_name)
+        
+        # Add any remaining tactics that aren't in the standard kill chain
+        remaining_tactics = tactics - set(ordered_tactics)
+        if remaining_tactics:
+            ordered_tactics.extend(sorted(remaining_tactics))
+            self.logger.debug(f"Added non-standard tactics: {remaining_tactics}")
+        
+        return ordered_tactics
     
     def create_timeline_chart(self, timeline_data: Dict, output_path: Path, title: str = "TTP Timeline") -> Path:
         """Create a timeline chart showing TTP evolution over time."""
@@ -201,11 +279,21 @@ class Visualizer:
         
         # Analyze frequencies
         technique_counts = Counter(ttp.get('technique_name', 'Unknown') for ttp in ttps)
-        tactic_counts = Counter(ttp.get('tactic', 'unknown').replace('-', ' ').title() for ttp in ttps)
+        tactic_counts = Counter()
+        
+        # Count tactics with proper display names
+        for ttp in ttps:
+            tactic = ttp.get('tactic', 'unknown').lower()
+            display_name = self.tactic_display_names.get(tactic, tactic.replace('-', ' ').title())
+            tactic_counts[display_name] += 1
         
         # Get top techniques and tactics
         top_techniques = technique_counts.most_common(15)
-        top_tactics = tactic_counts.most_common(10)
+        
+        # Order tactics by kill chain for consistent display
+        all_tactic_names = set(tactic_counts.keys())
+        ordered_tactic_names = self._order_tactics_by_kill_chain(all_tactic_names)
+        top_tactics = [(tactic, tactic_counts[tactic]) for tactic in ordered_tactic_names if tactic_counts[tactic] > 0]
         
         # Create subplots
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(16, 12))
@@ -230,19 +318,24 @@ class Visualizer:
                 ax1.text(bar.get_width() + 0.1, bar.get_y() + bar.get_height()/2, 
                         str(count), va='center', fontsize=9)
         
-        # Top tactics pie chart
+        # Tactics ordered by kill chain
         if top_tactics:
             tactics, counts = zip(*top_tactics)
-            colors = plt.cm.Set2(np.linspace(0, 1, len(tactics)))
             
-            wedges, texts, autotexts = ax2.pie(counts, labels=tactics, autopct='%1.1f%%', 
-                                              colors=colors, startangle=90)
-            ax2.set_title('Tactic Distribution', fontweight='bold')
+            # Use kill chain colors for better visualization
+            kill_chain_colors = plt.cm.viridis(np.linspace(0, 1, len(tactics)))
             
-            # Improve text readability
-            for autotext in autotexts:
-                autotext.set_color('white')
-                autotext.set_fontweight('bold')
+            bars2 = ax2.bar(range(len(tactics)), counts, color=kill_chain_colors)
+            ax2.set_xticks(range(len(tactics)))
+            ax2.set_xticklabels([t.replace(' ', '\n') for t in tactics], rotation=0, ha='center', fontsize=8)
+            ax2.set_ylabel('Frequency')
+            ax2.set_title('Tactics by Kill Chain Order', fontweight='bold')
+            ax2.grid(axis='y', alpha=0.3)
+            
+            # Add value labels on bars
+            for bar, count in zip(bars2, counts):
+                ax2.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.1, 
+                        str(count), ha='center', va='bottom', fontsize=9)
         
         # Confidence distribution
         confidences = [ttp.get('confidence', 0.5) for ttp in ttps]
